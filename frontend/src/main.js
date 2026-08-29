@@ -60,10 +60,10 @@ document.addEventListener("keydown", (event) => {
 
 function renderConfiguration() {
   if (!isConfigured()) {
-    appendLog("Configuration", "Contract address is not set. Copy frontend/.env.example to frontend/.env.local and set VITE_CONTRACT_ADDRESS before signing.", "warn");
-    elements.networkLabel.textContent = `Studionet · chain ${CHAIN_ID} · contract address pending`;
+    appendLog("Configuration", "Contract connection is not configured yet. Signing is unavailable.", "warn");
+    elements.networkLabel.textContent = "Studionet · connection pending";
   } else {
-    elements.networkLabel.textContent = `Studionet · chain ${CHAIN_ID} · ${shorten(CONTRACT_ADDRESS)}`;
+    elements.networkLabel.textContent = "Studionet · ready";
   }
 }
 
@@ -74,7 +74,7 @@ function renderConnection(state) {
   elements.accountLabel.textContent = connected ? shorten(state.account) : "";
   elements.connect.textContent = connected ? "Change wallet" : "Connect wallet";
   if (connected && !state.correctNetwork) {
-    elements.networkLabel.textContent = `Wrong network · switch wallet to Studionet (chain ${CHAIN_ID})`;
+    elements.networkLabel.textContent = "Wrong network · switch wallet to Studionet";
   }
 }
 
@@ -102,7 +102,7 @@ function renderWalletOptions() {
       try {
         await session.connect(detail);
         elements.dialog.close();
-        appendLog("Wallet", `Connected ${detail.info.name}. No session is persisted across reloads.`, "ok");
+        appendLog("Wallet", `Connected ${detail.info.name}.`, "ok");
         await offerPendingReconciliation();
       } catch (error) {
         appendLog("Wallet error", errorMessage(error), "error");
@@ -157,8 +157,8 @@ async function runWrite(operation, expected, submit) {
   if (busy) return showError("Another write is being reconciled. Wait for its hash and readback.");
   const state = session.snapshot();
   if (!state.connected) return showError("Connect a supported wallet before signing.");
-  if (!state.correctNetwork) return showError(`Switch the wallet to Studionet (chain ${CHAIN_ID}) before signing.`);
-  if (!isConfigured()) return showError("Set VITE_CONTRACT_ADDRESS before signing.");
+  if (!state.correctNetwork) return showError("Switch the wallet to Studionet before signing.");
+  if (!isConfigured()) return showError("Contract connection is not ready for signing.");
   busy = true;
   toggleActions(true);
   try {
@@ -233,10 +233,10 @@ function renderResult(result) {
 
 function logProgress(event) {
   if (event.phase === "submitted") {
-    appendLog("Submitted", event.persistenceDegraded ? "Hash retained in memory; storage degraded. Do not reload until reconciliation." : "Hash persisted before reconciliation.", "warn", event.hash);
+    appendLog("Submitted", event.persistenceDegraded ? "Hash retained; keep this page open until confirmation." : "Hash retained while confirmation is checked.", "warn", event.hash);
   } else if (event.phase === "finalizing") {
-    const status = event.state?.status ? ` (${event.state.status})` : "";
-    appendLog("Finality", `Polling GenLayer transaction object${status}.`, "info", event.hash);
+    const status = event.state?.status ? `: ${event.state.status.toLowerCase()}` : "";
+    appendLog("Finality", `Awaiting network confirmation${status}.`, "info", event.hash);
   } else if (event.phase === "readback") {
     appendLog("Readback", "Fetching the application state after finality.", "info", event.hash);
   }
