@@ -51,6 +51,35 @@ export function expectedState(state, applicationId, postconditions = {}) {
   return { applicationId, state, ...postconditions };
 }
 
+const POSITIVE_EVIDENCE_DIGEST = "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961";
+
+export function assessmentExpectedState(retry, applicationId, current) {
+  if (retry) {
+    if (current?.state !== "ASSESSED" || current?.outcome !== "UNRESOLVED") {
+      throw new Error("Application is not retryable: it must be ASSESSED with UNRESOLVED outcome.");
+    }
+    return expectedState("ASSESSED", applicationId, {
+      outcome: "UNRESOLVED",
+      matchedCriteria: [],
+      failedCriteria: [],
+      evidenceDigest: "",
+      sourceObservedAt: 0,
+      requireAssessmentFields: true,
+      minimumRetryCount: 1,
+    });
+  }
+  return expectedState("ASSESSED", applicationId, {
+    outcome: "ELIGIBLE",
+    matchedCriteria: ["REGION", "ORG_TYPE", "DEADLINE"],
+    failedCriteria: [],
+    evidenceDigest: POSITIVE_EVIDENCE_DIGEST,
+    sourceObservedAt: 1798761500,
+    lastReason: "",
+    requireAssessmentFields: true,
+    retryCount: 0,
+  });
+}
+
 export function assertApplicationReadback(result, expected) {
   if (!result || result.state !== expected.state) {
     throw new Error(`Readback mismatch: expected state ${expected.state}.`);

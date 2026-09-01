@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN } from "../../frontend/src/transaction.js";
-import { assertApplicationReadback } from "../../frontend/src/contract.js";
+import { assertApplicationReadback, assessmentExpectedState } from "../../frontend/src/contract.js";
 
 const HASH = `0x${"a".repeat(64)}`;
 const ACCOUNT = `0x${"1".repeat(40)}`;
@@ -45,6 +45,21 @@ test("assessment readback requires outcome, criteria arrays and evidence fields"
   const expected = { state: "ASSESSED", outcomes: ["ELIGIBLE", "UNRESOLVED"], requireAssessmentFields: true };
   assert.doesNotThrow(() => assertApplicationReadback({ state: "ASSESSED", outcome: "ELIGIBLE", matched_criteria: [], failed_criteria: [], evidence_digest: "digest", source_observed_at: 1, last_reason: "", retry_count: 0 }, expected));
   assert.throws(() => assertApplicationReadback({ state: "ASSESSED" }, expected), /outcome|criteria|assessment/i);
+});
+
+test("assessment expectations distinguish positive assess from unresolved retry", () => {
+  const positive = assessmentExpectedState(false, "positive");
+  assert.equal(positive.outcome, "ELIGIBLE");
+  assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
+  assert.equal(positive.retryCount, 0);
+
+  const retry = assessmentExpectedState(true, "unresolved", { state: "ASSESSED", outcome: "UNRESOLVED" });
+  assert.equal(retry.outcome, "UNRESOLVED");
+  assert.deepEqual(retry.matchedCriteria, []);
+  assert.equal(retry.evidenceDigest, "");
+  assert.equal(retry.sourceObservedAt, 0);
+  assert.equal(retry.minimumRetryCount, 1);
+  assert.throws(() => assessmentExpectedState(true, "positive", { state: "ASSESSED", outcome: "ELIGIBLE" }), /not retryable/i);
 });
 
 test("coordinator submits once and clears journal only after readback", async () => {
