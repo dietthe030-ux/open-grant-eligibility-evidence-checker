@@ -1,4 +1,3 @@
-const LEGACY_UUID = "legacy-window-ethereum";
 const EMPTY = Object.freeze([]);
 
 export const SUPPORTED_WALLETS = Object.freeze([
@@ -44,21 +43,6 @@ export class WalletRegistry {
     this.started = true;
     this.target.addEventListener("eip6963:announceProvider", this.onAnnouncement);
     this.target.dispatchEvent(new Event("eip6963:requestProvider"));
-    queueMicrotask(() => {
-      if (this.byUuid.size === 0 && isProvider(this.target.ethereum)) {
-        this.byUuid.set(LEGACY_UUID, {
-          legacy: true,
-          info: {
-            uuid: LEGACY_UUID,
-            name: "Injected wallet",
-            icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
-            rdns: "legacy.window.ethereum",
-          },
-          provider: this.target.ethereum,
-        });
-        this.publish();
-      }
-    });
   }
 
   accept(detail) {
@@ -68,9 +52,8 @@ export class WalletRegistry {
     const priorDetail = this.byUuid.get(detail.info.uuid);
     if (priorUuid && priorUuid !== detail.info.uuid) return false;
     if (priorDetail && priorDetail.provider !== providerObject) return false;
-    this.byUuid.delete(LEGACY_UUID);
     this.uuidByProvider.set(providerObject, detail.info.uuid);
-    this.byUuid.set(detail.info.uuid, { legacy: false, ...detail });
+    this.byUuid.set(detail.info.uuid, detail);
     this.publish();
     return true;
   }
@@ -111,6 +94,7 @@ export class WalletSession {
       this.chainId = normalizeChainId(chainId);
       this.onChange(this.snapshot());
     };
+    this.handleDisconnect = () => this.clear("Wallet disconnected.");
   }
 
   async connect(detail) {
@@ -128,6 +112,7 @@ export class WalletSession {
     this.chainId = chainId;
     this.provider.on?.("accountsChanged", this.handleAccounts);
     this.provider.on?.("chainChanged", this.handleChain);
+    this.provider.on?.("disconnect", this.handleDisconnect);
     this.onChange(this.snapshot());
     return this.snapshot();
   }
@@ -144,6 +129,7 @@ export class WalletSession {
   clearListeners() {
     this.provider?.removeListener?.("accountsChanged", this.handleAccounts);
     this.provider?.removeListener?.("chainChanged", this.handleChain);
+    this.provider?.removeListener?.("disconnect", this.handleDisconnect);
   }
 
   snapshot() {

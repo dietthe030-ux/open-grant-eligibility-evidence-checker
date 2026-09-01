@@ -59,7 +59,7 @@ npm test
 npm run build
 ```
 
-The wallet chooser supports MetaMask, OKX Wallet, and Rabby through EIP-6963. It never requests accounts when the chooser opens. Writes are single-flight, retain the transaction hash for recovery, poll the GenLayer transaction object for `FINALIZED`, require semantic `FINISHED_WITH_RETURN`, and then perform an application readback.
+The wallet chooser supports MetaMask, OKX Wallet, and Rabby through EIP-6963. It never requests accounts when the chooser opens. Writes are single-flight, persist the transaction hash when browser storage is available, poll the GenLayer transaction object for `FINALIZED` plus `MAJORITY_AGREE`, require semantic `FINISHED_WITH_RETURN`, and then perform an application readback. If storage persistence degrades after submission, the hash is retained only for the current page and the UI instructs the user not to retry.
 
 This repository is prepared only through the pre-deployment boundary. Studio deployment, signing, live E2E, GitHub push, and Vercel deployment require their later approvals and are intentionally not performed here.
 

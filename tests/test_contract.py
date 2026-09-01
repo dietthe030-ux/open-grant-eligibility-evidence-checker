@@ -119,6 +119,44 @@ def test_unavailable_source_is_retryable_and_recovers(direct_vm, direct_deploy):
     assert result["retry_count"] == 1
 
 
+def test_retry_unresolved_requires_a_completed_assessment(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
+    contract.create_application("draft", GRANT_URL, "US", "NONPROFIT", DEADLINE_EPOCH)
+
+    with pytest.raises(Exception, match="application is not retryable"):
+        contract.retry_unresolved("draft")
+
+    assert read(contract, "draft")["state"] == "DRAFT"
+
+
+def test_transient_web_exception_is_stored_as_retryable_unresolved(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
+    create(contract, "timeout")
+    direct_vm.clear_mocks()
+    direct_vm._live_web_handler = lambda _request: (_ for _ in ()).throw(TimeoutError("request timed out"))
+    try:
+        contract.assess_application("timeout")
+    finally:
+        direct_vm._live_web_handler = None
+
+    result = read(contract, "timeout")
+    assert result["state"] == "ASSESSED"
+    assert result["outcome"] == "UNRESOLVED"
+    assert result["last_reason"] == "SOURCE_UNAVAILABLE"
+
+
+def test_unknown_web_exception_is_not_silently_converted(direct_vm, direct_deploy):
+    contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
+    create(contract, "unknown-error")
+    direct_vm.clear_mocks()
+    direct_vm._live_web_handler = lambda _request: (_ for _ in ()).throw(RuntimeError("vm failure"))
+    try:
+        with pytest.raises(Exception, match="vm failure"):
+            contract.assess_application("unknown-error")
+    finally:
+        direct_vm._live_web_handler = None
+
+
 @pytest.mark.parametrize("status", [0, 429, 500, 599])
 def test_transient_source_failures_are_unresolved(status, direct_vm, direct_deploy):
     contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")

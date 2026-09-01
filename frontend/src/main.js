@@ -285,7 +285,7 @@ function renderResult(result) {
 
 function logProgress(event) {
   if (event.phase === "submitted") {
-    appendLog("Submitted", event.persistenceDegraded ? "Hash retained; keep this page open until confirmation." : "Hash retained while confirmation is checked.", "warn", event.hash);
+    appendLog("Submitted", event.persistenceDegraded ? "Hash retained for this session only; keep this page open and do not retry." : "Hash retained while confirmation is checked.", "warn", event.hash);
   } else if (event.phase === "finalizing") {
     const status = event.state?.status ? `: ${event.state.status.toLowerCase()}` : "";
     appendLog("Finality", `Awaiting network confirmation${status}.`, "info", event.hash);

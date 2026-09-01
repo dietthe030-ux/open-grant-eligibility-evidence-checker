@@ -29,8 +29,35 @@ test("wallet session is explicitly connected and invalidates on account removal"
   await session.connect(detail("meta-session", sessionProvider));
   assert.equal(session.snapshot().correctNetwork, true);
   assert.equal(session.snapshot().connected, true);
+  assert.equal(listeners.has("disconnect"), true);
   listeners.get("accountsChanged")([]);
   assert.equal(session.snapshot().connected, false);
+});
+
+test("wallet session clears on provider disconnect", async () => {
+  const listeners = new Map();
+  const sessionProvider = {
+    request: async ({ method }) => method === "eth_chainId" ? "0xf22f" : ["0x2222222222222222222222222222222222222222"],
+    on: (event, handler) => listeners.set(event, handler),
+    removeListener: (event) => listeners.delete(event),
+  };
+  const session = new WalletSession(61999);
+  await session.connect(detail("meta-disconnect", sessionProvider));
+  listeners.get("disconnect")({ code: 4900 });
+  assert.equal(session.snapshot().connected, false);
+  assert.equal(listeners.has("disconnect"), false);
+});
+
+test("registry does not expose an unidentified injected wallet", async () => {
+  const target = {
+    ethereum: provider,
+    addEventListener: () => {},
+    dispatchEvent: () => {},
+  };
+  const registry = new WalletRegistry(target);
+  registry.start();
+  await new Promise((resolve) => queueMicrotask(resolve));
+  assert.deepEqual(registry.providers(), []);
 });
 
 test("chain IDs normalize decimal and hexadecimal forms", () => {

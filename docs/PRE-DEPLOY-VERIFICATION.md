@@ -10,7 +10,7 @@ The Task now follows the current unified Build → implementation → Studio →
 
 ## Verified implementation
 
-- Exact implementation commit: `b8128e9e63e2aa3958abba122c0e502f780936d8`.
+- Exact reviewed revision is recorded in the ignored private PRE_DEPLOY package generated after the final source commit; this tracked note intentionally does not self-reference its own commit.
 - Category: `PROJECT`.
 - Contract: `contracts/open_grant_eligibility_evidence_checker.py`.
 - Frontend: `frontend/` with native HTML/CSS/ES modules and Vite.
@@ -24,7 +24,7 @@ The Task now follows the current unified Build → implementation → Studio →
 
 ```text
 gltest tests/ -q
-11 passed
+14 passed
 
 genvm-lint check contracts/open_grant_eligibility_evidence_checker.py --json
 ok=true; semantic validation passed; 7 methods (3 view, 4 write)
@@ -33,13 +33,21 @@ genvm-lint schema contracts/open_grant_eligibility_evidence_checker.py
 7 methods; 3 view methods; 4 write methods; 0 constructor parameters
 
 Set-Location frontend; npm test
-7 passed
+10 passed
 
 Set-Location frontend; npm run build
 Vite production build passed
 ```
 
 The linter emitted informational `I200` that a newer runner exists; the project remains pinned to the locally verified compatible GenVM bundle and has not changed runners.
+
+## Review finding closure
+
+- Retry is now restricted to assessed unresolved applications; draft applications cannot be assessed through the retry path.
+- Expected timeout/connection/transport/network web failures persist `UNRESOLVED` with bounded retry; unknown VM failures are not silently converted.
+- Transaction success now requires exact `FINALIZED`, `MAJORITY_AGREE`, and `FINISHED_WITH_RETURN` values.
+- Wallet sessions now clear on provider `disconnect`, and unidentified injected providers are not shown as supported wallets.
+- If browser storage fails after submission, the hash remains available only for the current page and the UI explicitly prohibits retry; durable journal persistence is required for reload recovery.
 
 ## Read-only Studio preflight
 

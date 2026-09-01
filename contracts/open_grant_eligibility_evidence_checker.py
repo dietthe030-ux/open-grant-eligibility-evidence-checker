@@ -155,6 +155,11 @@ def _result(outcome: str, matched: list, failed: list, digest: str, observed_at:
     )
 
 
+def _is_transient_web_error(error: Exception) -> bool:
+    marker_text = f"{type(error).__name__} {error}".lower()
+    return any(marker in marker_text for marker in ("timeout", "timed out", "connection", "transport", "network", "unavailable"))
+
+
 def _evaluate(
     grant_url: str,
     region: str,
@@ -167,7 +172,12 @@ def _evaluate(
     observation_not_before: u64,
     observation_not_after: u64,
 ) -> str:
-    response = gl.nondet.web.get(grant_url)
+    try:
+        response = gl.nondet.web.get(grant_url)
+    except Exception as error:
+        if _is_transient_web_error(error):
+            return _result("UNRESOLVED", [], [], "", 0, "SOURCE_UNAVAILABLE")
+        raise
     status = int(response.status)
     if status != 200:
         if status == 0 or status == 429 or 500 <= status <= 599:
@@ -345,8 +355,8 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
     @gl.public.write
     def retry_unresolved(self, application_id: str) -> None:
         record = self.applications[application_id]
-        if record.outcome != "UNRESOLVED":
-            _fail("application is not unresolved")
+        if record.state != "ASSESSED" or record.outcome != "UNRESOLVED":
+            _fail("application is not retryable")
         if record.retry_count >= 2:
             _fail("retry limit reached")
         record.retry_count = record.retry_count + 1

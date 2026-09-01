@@ -25,10 +25,10 @@ export function classifyTransaction(transaction) {
     consensus,
     execution,
     finalized: status === FINALIZED,
-    consensusAgreed: !consensus || consensus === "MAJORITY_AGREE",
+    consensusAgreed: consensus === "MAJORITY_AGREE",
     executionSucceeded: execution === FINISHED_WITH_RETURN,
     successful: status === FINALIZED &&
-      (!consensus || consensus === "MAJORITY_AGREE") &&
+      consensus === "MAJORITY_AGREE" &&
       execution === FINISHED_WITH_RETURN,
   });
 }

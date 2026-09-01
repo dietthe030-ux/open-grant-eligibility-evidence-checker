@@ -15,7 +15,10 @@ function storage() {
 test("transaction success requires GenLayer finality, consensus and semantic return", () => {
   assert.equal(classifyTransaction(success).successful, true);
   assert.equal(classifyTransaction({ ...success, statusName: "ACCEPTED" }).successful, false);
+  assert.equal(classifyTransaction({ ...success, resultName: undefined }).successful, false);
+  assert.equal(classifyTransaction({ ...success, resultName: "UNDETERMINED" }).successful, false);
   assert.throws(() => assertSuccessfulTransaction({ ...success, txExecutionResultName: "FINISHED_WITH_ERROR" }), /execution failed/);
+  assert.throws(() => assertSuccessfulTransaction({ ...success, resultName: undefined }), /Consensus failed/);
 });
 
 test("current leader receipt shape maps to FINISHED_WITH_RETURN", () => {
@@ -52,4 +55,33 @@ test("coordinator fails closed when storage is unavailable before submission", a
   const coordinator = createWriteCoordinator({ storage: broken, storageKey: "pending", waitForFinalized: async () => success, readback: async () => ({}), assertReadback: () => {} });
   await assert.rejects(() => coordinator.execute({ operation: "write", contract: CONTRACT, account: ACCOUNT, expected: {}, submit: async () => { submits += 1; return HASH; } }), /No write was submitted/);
   assert.equal(submits, 0);
+});
+
+test("coordinator exposes a degraded current-session hash without resubmitting", async () => {
+  const base = storage();
+  const journal = {
+    ...base,
+    setItem: (key, value) => key === "pending" ? (() => { throw new Error("quota"); })() : base.setItem(key, value),
+  };
+  const events = [];
+  let submits = 0;
+  const coordinator = createWriteCoordinator({
+    storage: journal,
+    storageKey: "pending",
+    waitForFinalized: async () => { throw new Error("temporary RPC failure"); },
+    readback: async () => ({}),
+    assertReadback: () => {},
+  });
+  await assert.rejects(() => coordinator.execute({
+    operation: "write",
+    contract: CONTRACT,
+    account: ACCOUNT,
+    expected: {},
+    submit: async () => { submits += 1; return HASH; },
+    progress: (event) => events.push(event),
+  }), /temporary RPC failure/);
+  assert.equal(submits, 1);
+  assert.equal(events[0].persistenceDegraded, true);
+  assert.equal(journal.getItem("pending"), null);
+  assert.equal(coordinator.load().hash, HASH);
 });
