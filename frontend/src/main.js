@@ -27,6 +27,7 @@ const elements = {
   log: document.querySelector("#activity-log"),
   dialog: document.querySelector("#wallet-dialog"),
   closeWallet: document.querySelector("#close-wallet"),
+  cancelWallet: document.querySelector("#cancel-wallet"),
   options: document.querySelector("#wallet-options"),
 };
 
@@ -46,7 +47,8 @@ elements.connect.addEventListener("click", () => {
   renderWalletOptions();
   elements.dialog.showModal();
 });
-elements.closeWallet.addEventListener("click", () => elements.dialog.close());
+elements.closeWallet?.addEventListener("click", () => elements.dialog.close());
+elements.cancelWallet?.addEventListener("click", () => elements.dialog.close());
 elements.dialog.addEventListener("click", (event) => {
   if (event.target === elements.dialog) elements.dialog.close();
 });
@@ -70,9 +72,12 @@ function renderConfiguration() {
 function renderConnection(state) {
   const connected = state.connected;
   elements.connectionDot.className = `status-dot ${connected && state.correctNetwork ? "connected" : connected ? "warn" : ""}`;
-  elements.connectionLabel.textContent = connected ? `Connected · ${state.detail?.info?.name ?? "wallet"}` : "Disconnected";
+  elements.connectionLabel.textContent = connected ? "Connected" : "Disconnected";
   elements.accountLabel.textContent = connected ? shorten(state.account) : "";
-  elements.connect.textContent = connected ? "Change wallet" : "Connect wallet";
+  elements.accountLabel.style.display = connected ? "inline-block" : "none";
+  elements.connect.innerHTML = connected
+    ? `<span class="button-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></span><span>Change wallet</span>`
+    : `<span class="button-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span><span>Connect wallet</span>`;
   if (connected && !state.correctNetwork) {
     elements.networkLabel.textContent = "Wrong network · switch wallet to Studionet";
   }
@@ -81,9 +86,15 @@ function renderConnection(state) {
 function renderWalletOptions() {
   elements.options.replaceChildren();
   if (providers.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "No supported provider announced. Install MetaMask, OKX Wallet, or Rabby, then reload.";
+    const empty = document.createElement("div");
+    empty.className = "wallet-empty-state";
+    const title = document.createElement("p");
+    title.className = "muted";
+    title.textContent = "No compatible wallet detected.";
+    const detail = document.createElement("p");
+    detail.className = "dialog-subtext";
+    detail.textContent = "Install a supported browser wallet, then reload the page.";
+    empty.append(title, detail);
     elements.options.append(empty);
     return;
   }
@@ -91,13 +102,31 @@ function renderWalletOptions() {
     const button = document.createElement("button");
     button.className = "wallet-option";
     button.type = "button";
+
+    const iconWrapper = document.createElement("div");
+    iconWrapper.className = "wallet-option-icon-wrap";
     const image = document.createElement("img");
     image.className = "wallet-icon";
     image.src = detail.info.icon;
     image.alt = "";
-    const text = document.createElement("span");
-    text.textContent = detail.info.name + (detail.legacy ? " (injected)" : "");
-    button.append(image, text);
+    iconWrapper.append(image);
+
+    const textWrap = document.createElement("div");
+    textWrap.className = "wallet-option-text";
+    const name = document.createElement("span");
+    name.className = "wallet-option-name";
+    name.textContent = detail.info.name;
+    const desc = document.createElement("span");
+    desc.className = "wallet-option-desc";
+    desc.textContent = "Detected browser wallet";
+    textWrap.append(name, desc);
+
+    const arrow = document.createElement("span");
+    arrow.className = "wallet-option-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+
+    button.append(iconWrapper, textWrap, arrow);
     button.addEventListener("click", async () => {
       try {
         await session.connect(detail);
@@ -188,7 +217,7 @@ async function offerPendingReconciliation() {
   if (!pending?.hash || String(pending.account).toLowerCase() !== state.account) return;
   appendLog("Recovery", `Pending ${pending.operation} found for ${pending.applicationId ?? pending.expected?.applicationId ?? "application"}. Choose reconcile to continue; no resubmission will occur.`, "warn");
   const button = document.createElement("button");
-  button.className = "button button-outline";
+  button.className = "button button-outline button-sm";
   button.type = "button";
   button.textContent = "Reconcile pending transaction";
   button.addEventListener("click", async () => {
@@ -214,21 +243,44 @@ function renderPendingNotice() {
 }
 
 function renderResult(result) {
-  elements.result.className = "result-card";
+  elements.result.className = "result-card active";
   elements.result.replaceChildren();
+
+  const header = document.createElement("div");
+  header.className = "result-header";
+
   const outcome = document.createElement("div");
   const outcomeValue = result.outcome ?? "READBACK";
   outcome.className = `outcome ${String(outcomeValue).toLowerCase().replaceAll("_", "-")}`;
   outcome.textContent = outcomeValue;
-  const state = document.createElement("strong");
+
+  const state = document.createElement("span");
+  state.className = "result-state-pill";
   state.textContent = `State: ${result.state ?? "unknown"}`;
-  const facts = document.createElement("p");
-  facts.className = "muted";
-  facts.textContent = `Matched: ${result.matched_criteria ?? "—"} · Failed: ${result.failed_criteria ?? "—"}`;
-  const reason = document.createElement("p");
-  reason.className = "muted";
-  reason.textContent = result.last_reason ?? result.reason ?? "Authoritative contract readback.";
-  elements.result.append(outcome, state, facts, reason);
+
+  header.append(outcome, state);
+
+  const criteriaBox = document.createElement("div");
+  criteriaBox.className = "result-criteria-grid";
+
+  const matched = document.createElement("div");
+  matched.className = "criterion-stat matched";
+  matched.innerHTML = `<span class="stat-label">Matched Criteria</span><span class="stat-value">${escapeHtml(result.matched_criteria ?? "—")}</span>`;
+
+  const failed = document.createElement("div");
+  failed.className = "criterion-stat failed";
+  failed.innerHTML = `<span class="stat-label">Failed Criteria</span><span class="stat-value">${escapeHtml(result.failed_criteria ?? "—")}</span>`;
+
+  criteriaBox.append(matched, failed);
+
+  const reason = document.createElement("div");
+  reason.className = "result-reason-box";
+  const reasonText = document.createElement("p");
+  reasonText.className = "result-reason-text";
+  reasonText.textContent = result.last_reason ?? result.reason ?? "Authoritative contract readback.";
+  reason.append(reasonText);
+
+  elements.result.append(header, criteriaBox, reason);
 }
 
 function logProgress(event) {
@@ -245,18 +297,37 @@ function logProgress(event) {
 function appendLog(title, message, tone = "info", hash = undefined) {
   const entry = document.createElement("div");
   entry.className = `log-entry ${tone}`;
-  const strong = document.createElement("strong");
-  strong.textContent = title;
+
+  const header = document.createElement("div");
+  header.className = "log-entry-header";
+
+  const tag = document.createElement("span");
+  tag.className = `log-tag ${tone}`;
+  tag.textContent = title;
+
   const text = document.createElement("span");
+  text.className = "log-text";
   text.textContent = message;
-  entry.append(strong, text);
+
+  header.append(tag, text);
+  entry.append(header);
+
   if (hash) {
+    const linkWrap = document.createElement("div");
+    linkWrap.className = "log-hash-wrap";
     const link = document.createElement("a");
     link.href = explorerTransactionUrl(hash);
     link.target = "_blank";
     link.rel = "noreferrer";
-    link.textContent = hash;
-    entry.append(link);
+    link.className = "log-hash-link";
+    const linkIcon = document.createElement("span");
+    linkIcon.setAttribute("aria-hidden", "true");
+    linkIcon.textContent = "↗";
+    const linkText = document.createElement("span");
+    linkText.textContent = hash;
+    link.append(linkIcon, linkText);
+    linkWrap.append(link);
+    entry.append(linkWrap);
   }
   elements.log.prepend(entry);
 }
@@ -284,6 +355,10 @@ function epochField(data, name) {
 function utcField(data, name) {
   const epoch = epochField(data, name);
   return epoch === undefined ? "" : new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
+}
+
+function escapeHtml(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function showError(message) { appendLog("Validation", message, "error"); }

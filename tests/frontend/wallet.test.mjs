@@ -15,6 +15,7 @@ test("provider registry accepts supported announcements and deduplicates provide
   assert.equal(registry.providers().length, 1);
   assert.equal(supportedWallet(detail().info).label, "MetaMask");
   assert.equal(supportedWallet({ name: "Unknown", rdns: "unknown.wallet" }), undefined);
+  assert.equal(supportedWallet({ name: "MetaMask", rdns: "forged.wallet" }), undefined);
 });
 
 test("wallet session is explicitly connected and invalidates on account removal", async () => {

@@ -24,12 +24,8 @@ function isAnnouncement(value) {
 
 export function supportedWallet(info) {
   const rdns = String(info?.rdns ?? "").toLowerCase();
-  const name = String(info?.name ?? "").toLowerCase();
   return SUPPORTED_WALLETS.find((wallet) =>
-    wallet.rdns.includes(rdns) ||
-    (wallet.key === "metamask" && name.includes("metamask")) ||
-    (wallet.key === "okx" && name.includes("okx")) ||
-    (wallet.key === "rabby" && name.includes("rabby")),
+    wallet.rdns.includes(rdns),
   );
 }
 
