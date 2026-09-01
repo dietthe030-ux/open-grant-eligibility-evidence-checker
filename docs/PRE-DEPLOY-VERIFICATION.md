@@ -10,6 +10,7 @@ The Task now follows the current unified Build → implementation → Studio →
 
 ## Verified implementation
 
+- Exact local commit: `2f1aa21b958b1ea5d3b097869a7322fe5281daa7`.
 - Category: `PROJECT`.
 - Contract: `contracts/open_grant_eligibility_evidence_checker.py`.
 - Frontend: `frontend/` with native HTML/CSS/ES modules and Vite.
@@ -17,6 +18,7 @@ The Task now follows the current unified Build → implementation → Studio →
 - Browser dependencies: `genlayer-js==1.1.8`, `vite==8.2.2`, Node `v22.22.2`.
 - Network configuration: imported current `studionet` chain from `genlayer-js`; no remembered RPC or contract address is hardcoded.
 - Public UI language audit: technical routing/provider details are kept out of the judge-facing page; wallet names appear only as individual picker choices.
+- Frontend redesign: Claude `CLAUDE_DESIGN_ITERATION 1/2` was reviewed by Codex, limited to the allowed frontend files, then corrected for public copy and runtime-data-safe DOM rendering.
 
 ## Automated evidence
 
