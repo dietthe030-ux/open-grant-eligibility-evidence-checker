@@ -10,7 +10,7 @@ The Task now follows the current unified Build → implementation → Studio →
 
 ## Verified implementation
 
-- Exact local commit: `2f1aa21b958b1ea5d3b097869a7322fe5281daa7`.
+- Exact implementation commit: `b8128e9e63e2aa3958abba122c0e502f780936d8`.
 - Category: `PROJECT`.
 - Contract: `contracts/open_grant_eligibility_evidence_checker.py`.
 - Frontend: `frontend/` with native HTML/CSS/ES modules and Vite.
@@ -41,14 +41,20 @@ Vite production build passed
 
 The linter emitted informational `I200` that a newer runner exists; the project remains pinned to the locally verified compatible GenVM bundle and has not changed runners.
 
+## Read-only Studio preflight
+
+- Studio page opened in the Codex in-app Browser: `https://studio.genlayer.com/contracts`.
+- Current visible network/account state: `998 GEN`; selected public account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`.
+- The account menu was inspected without connecting a new provider, signing, submitting, or changing Studio state.
+
 ## Required live evidence still absent
 
 - `PRE_DEPLOY` anonymous co-review approval for the final exact revision.
-- Read-only Studio schema/deployer-account verification. The Codex in-app Browser preflight was attempted twice and stopped after the same environment error: `failed to write kernel assets: The system cannot find the path specified (os error 3)`. No Studio page was opened and no wallet/provider action occurred.
+- Studio source upload/deployment schema acceptance and deployer-role confirmation for the final contract.
 - Contract address, deployment transaction, finalized execution, consensus, and deployed-source readback.
 - Studio lifecycle matrix and live Explorer evidence.
 - User-confirmed GitHub/Vercel targets and user-operated final Vercel E2E.
 
 ## Stop condition
 
-The next authorized action is the governed PRE_DEPLOY review and, only after its approval, a read-only Studio setup followed by deployment/signing. This task stops before any real Studio deployment.
+The next authorized action is the governed PRE_DEPLOY review. Even after reviewer approval, this task stops before any Studio deployment, signing, or other transaction until the user gives explicit permission.
