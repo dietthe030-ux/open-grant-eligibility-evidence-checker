@@ -78,8 +78,9 @@ export class WalletRegistry {
     const providerObject = detail.provider;
     const priorUuid = this.uuidByProvider.get(providerObject);
     const priorDetail = this.byUuid.get(detail.info.uuid);
-    if (priorUuid && priorUuid !== detail.info.uuid) return false;
+    if (priorUuid && priorUuid !== detail.info.uuid && !String(priorUuid).startsWith(`${LEGACY_PREFIX}-`)) return false;
     if (priorDetail && priorDetail.provider !== providerObject) return false;
+    for (const [uuid, candidate] of this.byUuid) if (candidate.legacy) this.byUuid.delete(uuid);
     this.uuidByProvider.set(providerObject, detail.info.uuid);
     this.byUuid.set(detail.info.uuid, detail);
     this.publish();
