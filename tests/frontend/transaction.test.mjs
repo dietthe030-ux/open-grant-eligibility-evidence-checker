@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN } from "../../frontend/src/transaction.js";
+import { assertApplicationReadback } from "../../frontend/src/contract.js";
 
 const HASH = `0x${"a".repeat(64)}`;
 const ACCOUNT = `0x${"1".repeat(40)}`;
@@ -38,6 +39,12 @@ test("current Studio transaction shape maps result_name and leader success", () 
   assert.equal(result.consensus, "MAJORITY_AGREE");
   assert.equal(result.execution, FINISHED_WITH_RETURN);
   assert.equal(result.successful, true);
+});
+
+test("assessment readback requires outcome, criteria arrays and evidence fields", () => {
+  const expected = { state: "ASSESSED", outcomes: ["ELIGIBLE", "UNRESOLVED"], requireAssessmentFields: true };
+  assert.doesNotThrow(() => assertApplicationReadback({ state: "ASSESSED", outcome: "ELIGIBLE", matched_criteria: [], failed_criteria: [], evidence_digest: "digest", source_observed_at: 1, last_reason: "", retry_count: 0 }, expected));
+  assert.throws(() => assertApplicationReadback({ state: "ASSESSED" }, expected), /outcome|criteria|assessment/i);
 });
 
 test("coordinator submits once and clears journal only after readback", async () => {

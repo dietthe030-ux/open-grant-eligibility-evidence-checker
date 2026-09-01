@@ -8,10 +8,11 @@ import {
   explorerTransactionUrl,
   getApplicationSnapshot,
   isConfigured,
+  expectedState,
 } from "./contract.js";
 
 const registry = new WalletRegistry(window);
-const session = new WalletSession(CHAIN_ID, renderConnection);
+const session = new WalletSession(CHAIN_ID, renderConnection, CHAIN);
 const elements = {
   connect: document.querySelector("#connect-button"),
   connectionDot: document.querySelector("#connection-dot"),
@@ -148,7 +149,9 @@ async function submitCreate(event) {
   const submittedAt = epochField(data, "submittedAt");
   if (!applicationId || !submittedAt) return;
   elements.actionId.value = applicationId;
-  await runWrite("create_application", { applicationId, state: "DRAFT" }, (client) => client.writeContract({
+  await runWrite("create_application", expectedState("DRAFT", applicationId, {
+    outcome: "UNRESOLVED", matchedCriteria: [], failedCriteria: [], evidenceDigest: "", sourceObservedAt: 0, lastReason: "", retryCount: 0,
+  }), (client) => client.writeContract({
     address: CONTRACT_ADDRESS,
     functionName: "create_application",
     args: [applicationId, textField(data, "grantUrl"), textField(data, "region"), textField(data, "orgType"), submittedAt],
@@ -165,7 +168,9 @@ async function submitFreeze(event) {
   if (!applicationId || before === undefined || after === undefined || !deadline) return;
   if (before > after) return showError("Observation start must be before or equal to observation end.");
   elements.actionId.value = applicationId;
-  await runWrite("freeze_application", { applicationId, state: "FROZEN" }, (client) => client.writeContract({
+  await runWrite("freeze_application", expectedState("FROZEN", applicationId, {
+    outcome: "UNRESOLVED", matchedCriteria: [], failedCriteria: [], evidenceDigest: "", sourceObservedAt: 0, lastReason: "", retryCount: 0,
+  }), (client) => client.writeContract({
     address: CONTRACT_ADDRESS,
     functionName: "freeze_application",
     args: [applicationId, textField(data, "regionCriterionId"), textField(data, "orgTypeCriterionId"), textField(data, "deadlineCriterionId"), deadline, before, after],
@@ -175,7 +180,9 @@ async function submitFreeze(event) {
 async function submitAssess(retry) {
   const applicationId = elements.actionId.value.trim();
   if (!applicationId) return showError("Enter an application ID first.");
-  await runWrite(retry ? "retry_unresolved" : "assess_application", { applicationId, state: "ASSESSED" }, (client) => client.writeContract({
+  await runWrite(retry ? "retry_unresolved" : "assess_application", expectedState("ASSESSED", applicationId, {
+    outcomes: ["UNRESOLVED", "CRITERIA_MISSING", "ELIGIBLE", "NOT_ELIGIBLE"], requireAssessmentFields: true, ...(retry ? { minimumRetryCount: 1 } : {}),
+  }), (client) => client.writeContract({
     address: CONTRACT_ADDRESS,
     functionName: retry ? "retry_unresolved" : "assess_application",
     args: [applicationId],
@@ -187,6 +194,7 @@ async function runWrite(operation, expected, submit) {
   const state = session.snapshot();
   if (!state.connected) return showError("Connect a supported wallet before signing.");
   if (!state.correctNetwork) return showError("Switch the wallet to Studionet before signing.");
+  if (!state.sufficientBalance) return showError("Wallet has no spendable GEN for this transaction.");
   if (!isConfigured()) return showError("Contract connection is not ready for signing.");
   busy = true;
   toggleActions(true);

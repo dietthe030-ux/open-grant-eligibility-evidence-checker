@@ -2,10 +2,11 @@ import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { createWriteCoordinator, parseContractJson, waitForFinalized } from "./transaction.js";
 
-export const CONTRACT_ADDRESS = String(import.meta.env.VITE_CONTRACT_ADDRESS ?? "").trim();
+const env = import.meta.env ?? {};
+export const CONTRACT_ADDRESS = String(env.VITE_CONTRACT_ADDRESS ?? "").trim();
 export const CHAIN = studionet;
 export const CHAIN_ID = Number(studionet.id);
-export const EXPLORER_URL = studionet.blockExplorers?.default?.url ?? "https://explorer-studio.genlayer.com";
+export const EXPLORER_URL = "https://explorer-studio.genlayer.com";
 
 export function isConfigured() {
   return /^0x[0-9a-fA-F]{40}$/.test(CONTRACT_ADDRESS);
@@ -46,8 +47,8 @@ export async function readResult(client, applicationId) {
   return parseContractJson(raw);
 }
 
-export function expectedState(state, applicationId, outcome = undefined) {
-  return { applicationId, state, ...(outcome ? { outcome } : {}) };
+export function expectedState(state, applicationId, postconditions = {}) {
+  return { applicationId, state, ...postconditions };
 }
 
 export function assertApplicationReadback(result, expected) {
@@ -56,6 +57,29 @@ export function assertApplicationReadback(result, expected) {
   }
   if (expected.outcome && result.outcome !== expected.outcome) {
     throw new Error(`Readback mismatch: expected outcome ${expected.outcome}.`);
+  }
+  if (expected.outcomes && !expected.outcomes.includes(result.outcome)) {
+    throw new Error(`Readback mismatch: unexpected outcome ${result.outcome ?? "missing"}.`);
+  }
+  if (expected.matchedCriteria && JSON.stringify(result.matched_criteria) !== JSON.stringify(expected.matchedCriteria)) {
+    throw new Error("Readback mismatch: matched criteria differ.");
+  }
+  if (expected.failedCriteria && JSON.stringify(result.failed_criteria) !== JSON.stringify(expected.failedCriteria)) {
+    throw new Error("Readback mismatch: failed criteria differ.");
+  }
+  if (expected.evidenceDigest !== undefined && result.evidence_digest !== expected.evidenceDigest) {
+    throw new Error("Readback mismatch: evidence digest differs.");
+  }
+  if (expected.requireAssessmentFields) {
+    if (!Array.isArray(result.matched_criteria) || !Array.isArray(result.failed_criteria)) {
+      throw new Error("Readback mismatch: assessment criteria arrays are missing.");
+    }
+    if (typeof result.evidence_digest !== "string" || !Number.isInteger(result.source_observed_at) || typeof result.last_reason !== "string") {
+      throw new Error("Readback mismatch: assessment evidence fields are invalid.");
+    }
+  }
+  if (expected.minimumRetryCount !== undefined && Number(result.retry_count) < expected.minimumRetryCount) {
+    throw new Error(`Readback mismatch: retry count is below ${expected.minimumRetryCount}.`);
   }
   return result;
 }
