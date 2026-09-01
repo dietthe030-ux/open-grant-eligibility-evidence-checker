@@ -1,0 +1,12 @@
+{
+  "canonical_url": "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
+  "observed_at": 1798761500,
+  "criterion_ids": {
+    "region": "region-1",
+    "org_type": "org-type-1",
+    "deadline": "deadline-2027"
+  },
+  "allowed_regions": ["EU", "US"],
+  "allowed_org_types": ["NONPROFIT"],
+  "deadline_utc": "2027-01-01T00:00:00Z"
+}

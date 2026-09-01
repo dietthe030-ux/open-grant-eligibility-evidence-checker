@@ -61,7 +61,7 @@ npm run build
 
 The wallet chooser supports MetaMask, OKX Wallet, and Rabby through EIP-6963. It never requests accounts when the chooser opens. Writes are single-flight, persist the transaction hash when browser storage is available, poll the GenLayer transaction object for `FINALIZED` plus `MAJORITY_AGREE`, require semantic `FINISHED_WITH_RETURN`, and then perform an application readback. If storage persistence degrades after submission, the hash is retained only for the current page and the UI instructs the user not to retry.
 
-This repository is prepared only through the pre-deployment boundary. Studio deployment, signing, live E2E, GitHub push, and Vercel deployment require their later approvals and are intentionally not performed here.
+The contract has been deployed to Studionet at `0x5F4CcBD152F3752944e669Ad935d5a358369d939`. The public GitHub repository is [dietthe030-ux/open-grant-eligibility-evidence-checker](https://github.com/dietthe030-ux/open-grant-eligibility-evidence-checker), and the current public Vercel release is [open-grant-eligibility-evidence-che.vercel.app](https://open-grant-eligibility-evidence-che.vercel.app/). Final Vercel E2E remains a separately gated checkpoint and is not claimed by this README.
 
 ## Official technical references
 

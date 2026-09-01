@@ -2,11 +2,11 @@
 
 ## Boundary
 
-This package records the exact local implementation prepared before real Studio deployment. No wallet was connected, no contract was deployed or signed, no Studio transaction exists, and no GitHub/Vercel target was selected.
+This is a historical PRE_DEPLOY snapshot. At the time it was written, no wallet was connected, no contract was deployed or signed, no Studio transaction existed, and no GitHub/Vercel target was selected. For the current live state, use the ignored private POST_DEPLOY_TEST package.
 
 ## Governance migration receipt
 
-The Task now follows the current unified Build → implementation → Studio → GitHub/Vercel → E2E → review → Project Explorer lifecycle. The prior local implementation and exact evidence were retained; no workflow restart and no second Explorer build were created. `Milestones` was not activated. The current checkpoint is `PRE_DEPLOY` readiness, and the required anonymous checkpoint remains independent from this Task.
+The Task follows the current unified Build → implementation → Studio → GitHub/Vercel → E2E → review → Project Explorer lifecycle. The prior local implementation and exact evidence were retained; no workflow restart and no second Explorer build were created. `Milestones` was not activated. This file records the historical `PRE_DEPLOY` readiness checkpoint and is superseded by the later POST_DEPLOY_TEST package.
 
 ## Verified implementation
 
@@ -55,14 +55,11 @@ The linter emitted informational `I200` that a newer runner exists; the project 
 - Current visible network/account state: `998 GEN`; selected public account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`.
 - The account menu was inspected without connecting a new provider, signing, submitting, or changing Studio state.
 
-## Required live evidence still absent
+## Historical stop condition
 
-- `PRE_DEPLOY` anonymous co-review approval for the final exact revision.
-- Studio source upload/deployment schema acceptance and deployer-role confirmation for the final contract.
-- Contract address, deployment transaction, finalized execution, consensus, and deployed-source readback.
-- Studio lifecycle matrix and live Explorer evidence.
-- User-confirmed GitHub/Vercel targets and user-operated final Vercel E2E.
+- This historical snapshot intentionally did not contain live evidence. The later private POST_DEPLOY_TEST package records the deployed contract, Studio transactions, GitHub repository, and Vercel release.
+- Final Vercel E2E remains a separate gated action and requires the anonymous reviewer-approved plan plus explicit user permission immediately before opening/preparing the release.
 
-## Stop condition
+## Supersession
 
-The next authorized action is the governed PRE_DEPLOY review. Even after reviewer approval, this task stops before any Studio deployment, signing, or other transaction until the user gives explicit permission.
+Do not use this historical file as current deployment provenance. The current evidence package is `private/POST-DEPLOY-VERIFICATION.md`.
