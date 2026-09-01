@@ -250,7 +250,7 @@ function renderWalletOptions() {
     name.textContent = detail.info.name;
     const desc = document.createElement("span");
     desc.className = "wallet-option-desc";
-    desc.textContent = "Standard Injected Provider";
+    desc.textContent = "Supported browser wallet";
     textWrap.append(name, desc);
 
     const arrow = document.createElement("span");
