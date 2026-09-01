@@ -149,9 +149,9 @@ def test_unknown_web_exception_is_not_silently_converted(direct_vm, direct_deplo
     contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
     create(contract, "unknown-error")
     direct_vm.clear_mocks()
-    direct_vm._live_web_handler = lambda _request: (_ for _ in ()).throw(RuntimeError("vm failure"))
+    direct_vm._live_web_handler = lambda _request: (_ for _ in ()).throw(RuntimeError("network invariant failed"))
     try:
-        with pytest.raises(Exception, match="vm failure"):
+        with pytest.raises(Exception, match="network invariant failed"):
             contract.assess_application("unknown-error")
     finally:
         direct_vm._live_web_handler = None

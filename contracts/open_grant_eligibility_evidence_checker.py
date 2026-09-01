@@ -156,8 +156,7 @@ def _result(outcome: str, matched: list, failed: list, digest: str, observed_at:
 
 
 def _is_transient_web_error(error: Exception) -> bool:
-    marker_text = f"{type(error).__name__} {error}".lower()
-    return any(marker in marker_text for marker in ("timeout", "timed out", "connection", "transport", "network", "unavailable"))
+    return isinstance(error, (TimeoutError, ConnectionError, OSError))
 
 
 def _evaluate(

@@ -44,7 +44,7 @@ The linter emitted informational `I200` that a newer runner exists; the project 
 ## Review finding closure
 
 - Retry is now restricted to assessed unresolved applications; draft applications cannot be assessed through the retry path.
-- Expected timeout/connection/transport/network web failures persist `UNRESOLVED` with bounded retry; unknown VM failures are not silently converted.
+- Explicit timeout/connection/OSError web failures persist `UNRESOLVED` with bounded retry; unknown VM failures are not silently converted, even when their message contains network terminology.
 - Transaction success now requires exact `FINALIZED`, `MAJORITY_AGREE`, and `FINISHED_WITH_RETURN` values.
 - Wallet sessions now clear on provider `disconnect`, and unidentified injected providers are not shown as supported wallets.
 - If browser storage fails after submission, the hash remains available only for the current page and the UI explicitly prohibits retry; durable journal persistence is required for reload recovery.
