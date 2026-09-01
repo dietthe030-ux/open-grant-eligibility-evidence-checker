@@ -134,6 +134,29 @@ test("wallet session surfaces a rejected network switch", async () => {
   await assert.rejects(() => session.connect(detail("meta-reject", sessionProvider)), /switch was rejected/);
 });
 
+test("wallet session clears stale balance while refreshing a changed account", async () => {
+  const listeners = new Map();
+  let balance = "0x1";
+  const sessionProvider = {
+    request: async ({ method, params }) => {
+      if (method === "eth_requestAccounts") return ["0x1111111111111111111111111111111111111111"];
+      if (method === "eth_chainId") return "0xf22f";
+      if (method === "eth_getBalance") return balance;
+      throw new Error(`unexpected ${method} ${JSON.stringify(params ?? [])}`);
+    },
+    on: (event, handler) => listeners.set(event, handler),
+    removeListener: (event) => listeners.delete(event),
+  };
+  const session = new WalletSession(61999);
+  await session.connect(detail("meta-refresh", sessionProvider));
+  balance = "0x0";
+  listeners.get("accountsChanged")(["0x2222222222222222222222222222222222222222"]);
+  assert.equal(session.snapshot().balanceWei, undefined);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(session.snapshot().sufficientBalance, false);
+  assert.equal(session.snapshot().account, "0x2222222222222222222222222222222222222222");
+});
+
 test("chain IDs normalize decimal and hexadecimal forms", () => {
   assert.equal(normalizeChainId("0xf22f"), 61999);
   assert.equal(normalizeChainId("61999"), 61999);

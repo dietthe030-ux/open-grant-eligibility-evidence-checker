@@ -180,8 +180,16 @@ async function submitFreeze(event) {
 async function submitAssess(retry) {
   const applicationId = elements.actionId.value.trim();
   if (!applicationId) return showError("Enter an application ID first.");
+  const expectedOutcome = "ELIGIBLE";
   await runWrite(retry ? "retry_unresolved" : "assess_application", expectedState("ASSESSED", applicationId, {
-    outcomes: ["UNRESOLVED", "CRITERIA_MISSING", "ELIGIBLE", "NOT_ELIGIBLE"], requireAssessmentFields: true, ...(retry ? { minimumRetryCount: 1 } : {}),
+    outcome: expectedOutcome,
+    matchedCriteria: ["REGION", "ORG_TYPE", "DEADLINE"],
+    failedCriteria: [],
+    evidenceDigest: "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961",
+    sourceObservedAt: 1798761500,
+    lastReason: "",
+    requireAssessmentFields: true,
+    ...(retry ? { minimumRetryCount: 1 } : { retryCount: 0 }),
   }), (client) => client.writeContract({
     address: CONTRACT_ADDRESS,
     functionName: retry ? "retry_unresolved" : "assess_application",

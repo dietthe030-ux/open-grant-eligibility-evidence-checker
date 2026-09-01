@@ -81,6 +81,9 @@ export function assertApplicationReadback(result, expected) {
   if (expected.minimumRetryCount !== undefined && Number(result.retry_count) < expected.minimumRetryCount) {
     throw new Error(`Readback mismatch: retry count is below ${expected.minimumRetryCount}.`);
   }
+  if (expected.retryCount !== undefined && Number(result.retry_count) !== expected.retryCount) {
+    throw new Error(`Readback mismatch: expected retry count ${expected.retryCount}.`);
+  }
   return result;
 }
 

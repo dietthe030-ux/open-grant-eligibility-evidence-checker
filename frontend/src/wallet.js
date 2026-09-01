@@ -118,12 +118,16 @@ export class WalletSession {
       if (!next) this.clear("Wallet disconnected.");
       else {
         this.account = String(next).toLowerCase();
+        this.balanceWei = undefined;
         this.onChange(this.snapshot());
+        void this.refreshBalance(this.account, this.chainId);
       }
     };
     this.handleChain = (chainId) => {
       this.chainId = normalizeChainId(chainId);
+      this.balanceWei = undefined;
       this.onChange(this.snapshot());
+      void this.refreshBalance(this.account, this.chainId);
     };
     this.handleDisconnect = () => this.clear("Wallet disconnected.");
   }
@@ -170,6 +174,21 @@ export class WalletSession {
     this.provider?.removeListener?.("accountsChanged", this.handleAccounts);
     this.provider?.removeListener?.("chainChanged", this.handleChain);
     this.provider?.removeListener?.("disconnect", this.handleDisconnect);
+  }
+
+  async refreshBalance(account = this.account, chainId = this.chainId) {
+    if (!this.provider || !isAddress(account) || chainId !== this.expectedChainId) return;
+    const provider = this.provider;
+    try {
+      const balanceWei = parseBalance(await provider.request({ method: "eth_getBalance", params: [account, "latest"] }));
+      if (this.provider !== provider || this.account !== String(account).toLowerCase() || this.chainId !== chainId) return;
+      this.balanceWei = balanceWei;
+      this.onChange(this.snapshot());
+    } catch (error) {
+      if (this.provider !== provider || this.account !== String(account).toLowerCase() || this.chainId !== chainId) return;
+      this.balanceWei = undefined;
+      this.onChange({ ...this.snapshot(), reason: String(error?.message ?? error) });
+    }
   }
 
   snapshot() {
