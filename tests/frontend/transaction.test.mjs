@@ -27,6 +27,19 @@ test("current leader receipt shape maps to FINISHED_WITH_RETURN", () => {
   assert.equal(result.successful, true);
 });
 
+test("current Studio transaction shape maps result_name and leader success", () => {
+  const result = classifyTransaction({
+    status: 7,
+    statusName: "FINALIZED",
+    result: 6,
+    result_name: "MAJORITY_AGREE",
+    consensus_data: { leader_receipt: [{ mode: "leader", execution_result: "SUCCESS", result: { status: "return" } }] },
+  });
+  assert.equal(result.consensus, "MAJORITY_AGREE");
+  assert.equal(result.execution, FINISHED_WITH_RETURN);
+  assert.equal(result.successful, true);
+});
+
 test("coordinator submits once and clears journal only after readback", async () => {
   const journal = storage();
   let submits = 0;

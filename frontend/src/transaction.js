@@ -1,5 +1,12 @@
 export const FINALIZED = "FINALIZED";
 export const FINISHED_WITH_RETURN = "FINISHED_WITH_RETURN";
+const CONSENSUS_BY_CODE = Object.freeze({ 0: "IDLE", 1: "AGREE", 2: "DISAGREE", 3: "TIMEOUT", 4: "DETERMINISTIC_VIOLATION", 5: "NO_MAJORITY", 6: "MAJORITY_AGREE", 7: "MAJORITY_DISAGREE" });
+
+function consensusName(transaction) {
+  const value = transaction.resultName ?? transaction.result_name ?? transaction.result;
+  return String(CONSENSUS_BY_CODE[String(value)] ?? value ?? "").toUpperCase();
+}
+
 export class TerminalTransactionError extends Error {
   constructor(message) {
     super(message);
@@ -10,7 +17,7 @@ export class TerminalTransactionError extends Error {
 export function classifyTransaction(transaction) {
   const value = transaction && typeof transaction === "object" ? transaction : {};
   const status = String(value.statusName ?? value.status ?? "").toUpperCase();
-  const consensus = String(value.resultName ?? "").toUpperCase();
+  const consensus = consensusName(value);
   const leader = Array.isArray(value.consensus_data?.leader_receipt)
     ? value.consensus_data.leader_receipt.find((receipt) => receipt?.mode === "leader")
     : undefined;

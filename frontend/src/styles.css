@@ -853,6 +853,10 @@ input:focus {
 }
 
 .log-hash-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
   margin-top: 0.15rem;
 }
 

@@ -326,7 +326,19 @@ function appendLog(title, message, tone = "info", hash = undefined) {
     const linkText = document.createElement("span");
     linkText.textContent = hash;
     link.append(linkIcon, linkText);
-    linkWrap.append(link);
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "button button-outline button-sm";
+    copy.textContent = "Copy hash";
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(hash);
+        copy.textContent = "Copied";
+      } catch {
+        copy.textContent = "Copy unavailable";
+      }
+    });
+    linkWrap.append(link, copy);
     entry.append(linkWrap);
   }
   elements.log.prepend(entry);
