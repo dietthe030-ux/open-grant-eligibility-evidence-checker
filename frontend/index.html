@@ -2,85 +2,148 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Cryptographic evidence signal for open grant eligibility on GenLayer." />
-    <title>Open Grant Evidence · GenLayer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Cryptographic evidence signal for open grant eligibility on GenLayer Studionet." />
+    <title>Open Grant Evidence · GenLayer Verification Desk</title>
   </head>
   <body>
+    <!-- Site Header & Verification Desk Masthead -->
     <header class="site-header">
       <div class="header-inner">
         <a class="brand-link" href="/" aria-label="Open Grant Evidence Home">
           <div class="brand-mark" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="2" width="28" height="28" rx="6" fill="#123e30" />
-              <path d="M9 16L14 21L23 11" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="23" cy="9" r="2.5" fill="#f59e0b"/>
-              <path d="M8 8H12M8 24H24" stroke="#6ee7b7" stroke-width="1.5" stroke-linecap="round"/>
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="28" height="28" rx="5" fill="var(--color-ink)" stroke="var(--color-accent)" stroke-width="1.5" />
+              <rect x="6" y="6" width="20" height="20" rx="3" fill="var(--color-accent-light)" />
+              <path d="M10 16.5L14 20.5L22 11.5" stroke="var(--color-accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="22" cy="9.5" r="2" fill="var(--color-highlight)"/>
+              <line x1="10" y1="24" x2="22" y2="24" stroke="var(--color-ink-muted)" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </div>
           <div class="brand-text">
             <span class="brand-title">OPEN GRANT <strong>EVIDENCE</strong></span>
-            <span class="brand-network">STUDIONET · INTELLIGENT CONTRACT</span>
+            <span class="brand-subtitle">STUDIONET · VERIFIED CRITERIA DESK</span>
           </div>
         </a>
+
         <div class="header-actions">
-          <button class="button button-header" id="connect-button" type="button">
-            <span class="button-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-            </span>
-            <span>Connect wallet</span>
-          </button>
+          <div class="wallet-control">
+            <button class="button button-header" id="connect-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="wallet-menu">
+              <span class="button-icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </span>
+              <span>Connect wallet</span>
+            </button>
+            <div class="wallet-menu" id="wallet-menu" role="menu" hidden>
+              <div class="wallet-menu-header" aria-hidden="true">
+                <span class="wallet-menu-caption">Active Session</span>
+              </div>
+              <button class="wallet-menu-item" id="change-wallet" type="button" role="menuitem">
+                <svg class="wallet-menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                </svg>
+                <span>Change wallet</span>
+              </button>
+              <button class="wallet-menu-item wallet-menu-item-danger" id="disconnect-wallet" type="button" role="menuitem">
+                <svg class="wallet-menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+                <span>Disconnect</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </header>
 
     <main id="main-content">
+      <!-- Hero & Desk Briefing Section -->
       <section class="hero-section" aria-labelledby="page-title">
-        <div class="hero-eyebrow">
-          <span class="eyebrow-pill">CRITERIA VERIFICATION</span>
-          <span class="eyebrow-text">GENLAYER / STUDIONET</span>
-        </div>
-        <h1 id="page-title">Make the grant criteria inspectable.</h1>
-        <p class="hero-copy">Freeze a public source and declared applicant facts, then let validators derive a bounded evidence signal from the same inputs.</p>
+        <div class="hero-grid">
+          <div class="hero-lead">
+            <div class="hero-eyebrow">
+              <span class="eyebrow-pill">GENLAYER STUDIONET</span>
+              <span class="eyebrow-text">ATTESTATION WORKSPACE</span>
+            </div>
+            <h1 id="page-title">Make the grant criteria inspectable.</h1>
+            <p class="hero-copy">Freeze a public grant specification and declared applicant facts on GenLayer. Independent consensus validators evaluate canonical criteria inside an immutable observation window.</p>
 
-        <div class="disclaimer-banner" role="note">
-          <div class="disclaimer-icon" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
+            <div class="disclaimer-banner" role="note">
+              <div class="disclaimer-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <div class="disclaimer-body">
+                <p class="notice"><strong>Attestation Notice:</strong> This is a cryptographic evidence signal conditional on declared facts. It is not identity verification, legal advice, or a funding guarantee.</p>
+              </div>
+            </div>
           </div>
-          <div class="disclaimer-body">
-            <p class="notice">This is an evidence signal conditional on declared facts. It is not identity verification, legal advice, or a funding guarantee.</p>
-          </div>
+
+          <aside class="hero-protocol-card" aria-label="Verification Protocol Lifecycle">
+            <div class="protocol-card-header">
+              <span class="protocol-card-tag">VERIFICATION FLOW</span>
+              <span class="protocol-card-sub">On-Chain Consensus</span>
+            </div>
+            <ol class="protocol-steps">
+              <li class="protocol-step">
+                <span class="protocol-num" aria-hidden="true">01</span>
+                <div class="protocol-info">
+                  <strong>Declare Draft</strong>
+                  <p>Register applicant facts and link public grant criteria URL.</p>
+                </div>
+              </li>
+              <li class="protocol-step">
+                <span class="protocol-num" aria-hidden="true">02</span>
+                <div class="protocol-info">
+                  <strong>Freeze Window</strong>
+                  <p>Bind criterion IDs, publish deadline, and fix observation bounds.</p>
+                </div>
+              </li>
+              <li class="protocol-step">
+                <span class="protocol-num" aria-hidden="true">03</span>
+                <div class="protocol-info">
+                  <strong>Derive Verdict</strong>
+                  <p>Validators reach consensus and commit authoritative readback.</p>
+                </div>
+              </li>
+            </ol>
+          </aside>
         </div>
       </section>
 
-      <section class="status-strip" aria-live="polite" aria-label="Connection and Network Status">
+      <!-- Network and Connection Status Ribbon -->
+      <section class="status-strip" aria-live="polite" aria-label="Connection and Network Telemetry">
         <div class="status-col status-connection">
           <span class="status-dot" id="connection-dot"></span>
           <span class="status-label-group">
+            <span class="status-caption">Session:</span>
             <strong id="connection-label">Disconnected</strong>
             <span id="account-label" class="account-badge"></span>
           </span>
         </div>
         <div class="status-col status-network">
-          <span class="network-indicator" aria-hidden="true"></span>
-          <span id="network-label">Studionet configuration pending</span>
+          <span class="network-dot" aria-hidden="true"></span>
+          <span class="status-caption">Network:</span>
+          <span id="network-label" class="network-label-text">Studionet · connection pending</span>
         </div>
       </section>
 
+      <!-- Three-Step Verification Desk Workspace -->
       <section class="workspace" aria-label="Eligibility verification workflow">
-        <!-- Step 01: Create -->
-        <article class="panel panel-step-1">
+        <!-- Step 01: Create Draft -->
+        <article class="panel panel-step panel-step-1">
           <div class="panel-header">
-            <span class="step-badge">STEP 01</span>
+            <div class="panel-step-indicator">
+              <span class="step-badge">PHASE 01 · DRAFT</span>
+            </div>
             <h2>Start an application</h2>
-            <p class="panel-desc">Applicant facts are self-declared. Use a unique ID for each contradictory fact set.</p>
+            <p class="panel-desc">Applicant facts are self-declared. Use a unique application ID for each distinct record.</p>
           </div>
           <form id="create-form" class="form-grid" novalidate>
             <div class="field-group">
@@ -117,17 +180,19 @@
           </form>
         </article>
 
-        <!-- Step 02: Freeze -->
-        <article class="panel panel-step-2">
+        <!-- Step 02: Freeze Evidence Window -->
+        <article class="panel panel-step panel-step-2">
           <div class="panel-header">
-            <span class="step-badge">STEP 02</span>
+            <div class="panel-step-indicator">
+              <span class="step-badge">PHASE 02 · FREEZE</span>
+            </div>
             <h2>Bind the evidence window</h2>
-            <p class="panel-desc">The source must return canonical criterion IDs, allowed values, UTC deadline, and observation bounds.</p>
+            <p class="panel-desc">Map criterion IDs against source data, define the deadline, and seal the observation bounds.</p>
           </div>
           <form id="freeze-form" class="form-grid" novalidate>
             <div class="field-group">
               <label for="freeze-app-id">Application ID <span class="required-star" aria-hidden="true">*</span></label>
-              <input id="freeze-app-id" name="applicationId" required placeholder="same as draft" autocomplete="off" spellcheck="false" />
+              <input id="freeze-app-id" name="applicationId" required placeholder="same as draft ID" autocomplete="off" spellcheck="false" />
             </div>
             <div class="field-row-3">
               <div class="field-group">
@@ -166,13 +231,16 @@
           </form>
         </article>
 
-        <!-- Step 03: Assess & Readback -->
-        <article class="panel panel-result">
-          <div class="panel-header">
-            <span class="step-badge">STEP 03</span>
-            <h2>Read the result</h2>
-            <p class="panel-desc">Derive the consensus evidence outcome through validators and inspect authoritative contract readback.</p>
+        <!-- Step 03: Assess, Retry & Readback Centerpiece -->
+        <article class="panel panel-result" aria-labelledby="result-heading">
+          <div class="panel-header panel-header-result">
+            <div class="panel-step-indicator">
+              <span class="step-badge step-badge-highlight">PHASE 03 · CONSENSUS VERDICT</span>
+            </div>
+            <h2 id="result-heading">Read the verified result</h2>
+            <p class="panel-desc">Trigger decentralized validator assessment or inspect the authoritative on-chain consensus state.</p>
           </div>
+
           <div class="assessment-controls">
             <div class="field-group grow">
               <label for="action-application-id">Application ID <span class="required-star" aria-hidden="true">*</span></label>
@@ -180,19 +248,33 @@
             </div>
             <div class="button-group">
               <button class="button button-dark" id="assess-button" type="button">
+                <span class="button-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                  </svg>
+                </span>
                 <span>Assess</span>
               </button>
               <button class="button button-outline" id="retry-button" type="button">
+                <span class="button-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                  </svg>
+                </span>
                 <span>Retry unresolved</span>
               </button>
             </div>
           </div>
 
           <div class="result-container">
-            <div class="result-label">VERIFIED RESULT</div>
+            <div class="result-caption">
+              <span class="result-caption-text">AUTHORITATIVE ON-CHAIN VERDICT</span>
+              <span class="result-caption-line" aria-hidden="true"></span>
+            </div>
             <div id="result-card" class="result-card empty">
               <div class="empty-state-icon" aria-hidden="true">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                   <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -200,46 +282,65 @@
                   <polyline points="10 9 9 9 8 9"></polyline>
                 </svg>
               </div>
-              <p class="empty-state-text">No readback yet. Submit an application or enter an existing ID to assess.</p>
+              <div class="empty-state-content">
+                <strong class="empty-state-title">No readback loaded</strong>
+                <p class="empty-state-text">Submit a new application or enter an existing application ID above to trigger assessment.</p>
+              </div>
             </div>
           </div>
         </article>
       </section>
 
-      <!-- Activity Log -->
+      <!-- Activity Timeline Section -->
       <section class="activity" aria-labelledby="activity-title">
         <div class="activity-heading">
-          <span class="eyebrow-pill">ACTIVITY</span>
-          <h2 id="activity-title">Activity log</h2>
-          <p class="activity-desc">Follow confirmation and verified result updates as they happen.</p>
+          <span class="eyebrow-pill">AUDIT TRAIL</span>
+          <h2 id="activity-title">Verification activity log</h2>
+          <p class="activity-desc">Track real-time transaction submission, consensus finality, and authoritative readback events.</p>
         </div>
         <div class="activity-log-wrapper">
           <div id="activity-log" class="activity-log" aria-live="polite">
-            <div class="log-entry initial-prompt">
-              <span class="log-tag info">Ready</span>
-              <span class="log-text">Connect a supported wallet only when you are ready to sign.</span>
+            <div class="log-entry info initial-prompt">
+              <div class="log-entry-header">
+                <span class="log-tag info">Ready</span>
+                <span class="log-text">Connect a supported wallet (MetaMask, OKX Wallet, or Rabby) when you are ready to sign.</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
     </main>
 
+    <!-- Footer Colophon -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-colophon">
+          <span class="footer-brand">Open Grant Evidence</span>
+          <span class="footer-sep">·</span>
+          <span class="footer-desc">GenLayer Studionet Intelligent Contract Verification</span>
+        </div>
+        <div class="footer-meta">
+          <span>Decentralized Consensus Protocol</span>
+        </div>
+      </div>
+    </footer>
+
     <!-- Wallet Selector Modal -->
     <dialog id="wallet-dialog" class="wallet-dialog" aria-labelledby="wallet-dialog-title">
       <div class="dialog-card">
         <div class="dialog-heading">
           <div class="dialog-title-group">
-            <span class="dialog-eyebrow">WALLET</span>
+            <span class="dialog-eyebrow">STUDIONET WALLET</span>
             <h2 id="wallet-dialog-title">Choose a wallet</h2>
           </div>
           <button class="icon-button dialog-close-btn" id="close-wallet" type="button" aria-label="Close wallet chooser">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-        <p class="dialog-notice">Choose the wallet you want to use for this session.</p>
+        <p class="dialog-notice">Select a supported browser wallet to sign contract transactions on Studionet.</p>
         <div id="wallet-options" class="wallet-options"></div>
         <div class="dialog-footer">
           <button class="dialog-cancel-link" id="cancel-wallet" type="button">Cancel</button>
