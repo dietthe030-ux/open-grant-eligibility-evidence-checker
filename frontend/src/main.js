@@ -431,33 +431,33 @@ function pendingRecords() {
 
 async function offerPendingReconciliation() {
   const state = session.snapshot();
-  const record = pendingRecords().find(({ pending }) =>
+  const records = pendingRecords().filter(({ pending }) =>
     String(pending.account).toLowerCase() === state.account,
   );
-  const pending = record?.pending;
-  if (!pending?.hash || String(pending.account).toLowerCase() !== state.account) return;
-  appendLog(
-    "Recovery",
-    `Pending transaction detected for ${pending.applicationId ?? pending.expected?.applicationId ?? "application"}. Click Reconcile to verify on-chain state without re-signing.`,
-    "warn"
-  );
-  const button = document.createElement("button");
-  button.className = "button button-outline button-sm";
-  button.type = "button";
-  button.textContent = "Reconcile pending transaction";
-  button.addEventListener("click", async () => {
-    button.disabled = true;
-    try {
-      const { coordinator } = createOperationCoordinator(state, pending.operation, pending.expected, logProgress);
-      const result = await coordinator.resume(logProgress);
-      renderResult(result);
-      appendLog("Recovery", "Pending transaction reconciled and readback verified.", "ok");
-    } catch (error) {
-      appendLog("Recovery", errorMessage(error), "error");
-      button.disabled = false;
-    }
+  records.forEach(({ pending }) => {
+    appendLog(
+      "Recovery",
+      `Pending transaction detected for ${pending.applicationId ?? pending.expected?.applicationId ?? "application"}. Click Reconcile to verify on-chain state without re-signing.`,
+      "warn"
+    );
+    const button = document.createElement("button");
+    button.className = "button button-outline button-sm";
+    button.type = "button";
+    button.textContent = `Reconcile ${pending.applicationId ?? pending.expected?.applicationId ?? "pending transaction"}`;
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        const { coordinator } = createOperationCoordinator(state, pending.operation, pending.expected, logProgress);
+        const result = await coordinator.resume(logProgress);
+        renderResult(result);
+        appendLog("Recovery", "Pending transaction reconciled and readback verified.", "ok");
+      } catch (error) {
+        appendLog("Recovery", errorMessage(error), "error");
+        button.disabled = false;
+      }
+    });
+    elements.log.prepend(button);
   });
-  elements.log.prepend(button);
 }
 
 function renderPendingNotice() {

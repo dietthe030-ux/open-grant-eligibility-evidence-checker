@@ -151,6 +151,7 @@ export function createOperationCoordinator(session, operation, expected, onProgr
   const client = createWriteClient(session);
   const coordinator = createWriteCoordinator({
     storageKey: pendingStorageKey(expected?.applicationId),
+    legacyStorageKey: LEGACY_PENDING_STORAGE_KEY,
     waitForFinalized: (hash) => waitForFinalized(client, hash, {
       onPoll: (state) => onProgress?.({ phase: "finalizing", hash, state }),
     }),

@@ -11,7 +11,7 @@ const success = { statusName: "FINALIZED", resultName: "MAJORITY_AGREE", txExecu
 
 function storage() {
   const values = new Map();
-  return { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
+  return { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key), keys: () => [...values.keys()] };
 }
 
 test("transaction success requires GenLayer finality, consensus and semantic return", () => {
@@ -81,6 +81,47 @@ test("UTC form timestamps preserve exact seconds for transaction arguments", () 
 test("pending journals are isolated per application while retaining the legacy key", () => {
   assert.notEqual(pendingStorageKey("e2e-positive-20260902-05"), pendingStorageKey("e2e-unresolved-20260902-04"));
   assert.match(pendingStorageKey("e2e-positive-20260902-05"), /pending-write\.v1\.e2e-positive-20260902-05/);
+});
+
+test("legacy pending journal migrates and resumes through its application-scoped coordinator", async () => {
+  const journal = storage();
+  const legacyKey = "legacy";
+  const scopedKey = "scoped.application";
+  journal.setItem(legacyKey, JSON.stringify({ version: 1, operation: "write", hash: HASH, contract: CONTRACT, account: ACCOUNT, expected: { applicationId: "application" } }));
+  const coordinator = createWriteCoordinator({
+    storage: journal,
+    storageKey: scopedKey,
+    legacyStorageKey: legacyKey,
+    waitForFinalized: async () => success,
+    readback: async () => ({ state: "DRAFT" }),
+    assertReadback: (result) => assert.equal(result.state, "DRAFT"),
+  });
+  const result = await coordinator.resume();
+  assert.equal(result.state, "DRAFT");
+  assert.equal(journal.getItem(legacyKey), null);
+  assert.equal(journal.getItem(scopedKey), null);
+});
+
+test("multiple pending applications remain independently recoverable", async () => {
+  const journal = storage();
+  const secondHash = `0x${"b".repeat(64)}`;
+  const pending = (hash, applicationId) => JSON.stringify({ version: 1, operation: "write", hash, contract: CONTRACT, account: ACCOUNT, expected: { applicationId } });
+  journal.setItem("scoped.one", pending(HASH, "one"));
+  journal.setItem("scoped.two", pending(secondHash, "two"));
+  const recovered = [];
+  for (const [key, applicationId] of [["scoped.one", "one"], ["scoped.two", "two"]]) {
+    const coordinator = createWriteCoordinator({
+      storage: journal,
+      storageKey: key,
+      waitForFinalized: async () => success,
+      readback: async (record) => { recovered.push(record.expected.applicationId); return { state: "DRAFT" }; },
+      assertReadback: () => {},
+    });
+    await coordinator.resume();
+    assert.equal(journal.getItem(key), null);
+    assert.equal(applicationId, recovered.at(-1));
+  }
+  assert.deepEqual(recovered, ["one", "two"]);
 });
 
 test("coordinator submits once and clears journal only after readback", async () => {

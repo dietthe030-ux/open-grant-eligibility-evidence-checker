@@ -65,6 +65,7 @@ export function isHexHash(value) {
 export function createWriteCoordinator({
   storage = globalThis.localStorage,
   storageKey,
+  legacyStorageKey,
   waitForFinalized,
   assertSuccessful = assertSuccessfulTransaction,
   readback,
@@ -73,6 +74,15 @@ export function createWriteCoordinator({
   let inFlight = false;
   let volatilePending;
   const probeKey = `${storageKey}.probe`;
+
+  function read(key) {
+    try {
+      const value = JSON.parse(storage?.getItem(key) ?? "null");
+      return isPending(value) ? value : undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   function isPending(value) {
     return Boolean(value && typeof value === "object" && value.version === 1 &&
@@ -83,12 +93,22 @@ export function createWriteCoordinator({
 
   function load() {
     if (volatilePending) return volatilePending;
+    return read(storageKey);
+  }
+
+  function loadForResume() {
+    const scoped = load();
+    if (scoped || !legacyStorageKey || legacyStorageKey === storageKey) return scoped;
+    const legacy = read(legacyStorageKey);
+    if (!legacy) return undefined;
+    volatilePending = legacy;
     try {
-      const value = JSON.parse(storage?.getItem(storageKey) ?? "null");
-      return isPending(value) ? value : undefined;
+      storage.setItem(storageKey, JSON.stringify(legacy));
+      volatilePending = undefined;
     } catch {
-      return undefined;
+      // The legacy record remains the authoritative fallback for this resume.
     }
+    return legacy;
   }
 
   function requireStorage() {
@@ -114,6 +134,7 @@ export function createWriteCoordinator({
   function clearOrRemainLocked(pending) {
     try {
       storage.removeItem(storageKey);
+      if (legacyStorageKey && read(legacyStorageKey)?.hash === pending.hash) storage.removeItem(legacyStorageKey);
       volatilePending = undefined;
     } catch {
       volatilePending = pending;
@@ -158,7 +179,7 @@ export function createWriteCoordinator({
   }
 
   async function resume(progress = () => {}) {
-    const pending = load();
+    const pending = loadForResume();
     if (!pending) throw new Error("No transaction is waiting for reconciliation.");
     if (inFlight) throw new Error("Transaction reconciliation is already running.");
     inFlight = true;
