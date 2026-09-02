@@ -10,6 +10,8 @@ import {
   isConfigured,
   expectedState,
   assessmentExpectedState,
+  LEGACY_PENDING_STORAGE_KEY,
+  PENDING_STORAGE_PREFIX,
 } from "./contract.js";
 import { parseUtcEpoch } from "./time.js";
 
@@ -409,14 +411,30 @@ async function runWrite(operation, expected, submit) {
 // -------------------------------------------------------------
 // Recovery & Storage Reconciliations
 // -------------------------------------------------------------
+function pendingRecords() {
+  const records = [];
+  try {
+    const keys = [LEGACY_PENDING_STORAGE_KEY];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(PENDING_STORAGE_PREFIX)) keys.push(key);
+    }
+    for (const storageKey of new Set(keys)) {
+      const pending = JSON.parse(localStorage.getItem(storageKey) ?? "null");
+      if (pending?.hash) records.push({ pending, storageKey });
+    }
+  } catch {
+    return [];
+  }
+  return records;
+}
+
 async function offerPendingReconciliation() {
   const state = session.snapshot();
-  let pending;
-  try {
-    pending = JSON.parse(localStorage.getItem("open-grant-eligibility.pending-write.v1") ?? "null");
-  } catch {
-    return;
-  }
+  const record = pendingRecords().find(({ pending }) =>
+    String(pending.account).toLowerCase() === state.account,
+  );
+  const pending = record?.pending;
   if (!pending?.hash || String(pending.account).toLowerCase() !== state.account) return;
   appendLog(
     "Recovery",
@@ -443,17 +461,12 @@ async function offerPendingReconciliation() {
 }
 
 function renderPendingNotice() {
-  try {
-    const pending = JSON.parse(localStorage.getItem("open-grant-eligibility.pending-write.v1") ?? "null");
-    if (pending?.hash) {
-      appendLog(
-        "Recovery",
-        `A pending transaction hash exists (${shorten(pending.hash)}). Connect the same wallet to reconcile it.`,
-        "warn"
-      );
-    }
-  } catch {
-    /* storage unavailable */
+  for (const { pending } of pendingRecords()) {
+    appendLog(
+      "Recovery",
+      `A pending transaction hash exists (${shorten(pending.hash)}). Connect the same wallet to reconcile it.`,
+      "warn"
+    );
   }
 }
 

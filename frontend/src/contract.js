@@ -7,6 +7,13 @@ export const CONTRACT_ADDRESS = String(env.VITE_CONTRACT_ADDRESS ?? "").trim();
 export const CHAIN = studionet;
 export const CHAIN_ID = Number(studionet.id);
 export const EXPLORER_URL = "https://explorer-studio.genlayer.com";
+export const LEGACY_PENDING_STORAGE_KEY = "open-grant-eligibility.pending-write.v1";
+export const PENDING_STORAGE_PREFIX = `${LEGACY_PENDING_STORAGE_KEY}.`;
+
+export function pendingStorageKey(applicationId) {
+  const normalized = String(applicationId ?? "").trim();
+  return normalized ? `${PENDING_STORAGE_PREFIX}${encodeURIComponent(normalized)}` : LEGACY_PENDING_STORAGE_KEY;
+}
 
 export function isConfigured() {
   return /^0x[0-9a-fA-F]{40}$/.test(CONTRACT_ADDRESS);
@@ -143,7 +150,7 @@ export function assertApplicationReadback(result, expected) {
 export function createOperationCoordinator(session, operation, expected, onProgress) {
   const client = createWriteClient(session);
   const coordinator = createWriteCoordinator({
-    storageKey: "open-grant-eligibility.pending-write.v1",
+    storageKey: pendingStorageKey(expected?.applicationId),
     waitForFinalized: (hash) => waitForFinalized(client, hash, {
       onPoll: (state) => onProgress?.({ phase: "finalizing", hash, state }),
     }),
