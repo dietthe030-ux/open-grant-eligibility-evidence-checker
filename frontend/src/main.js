@@ -388,13 +388,13 @@ async function runWrite(operation, expected, submit) {
   toggleActions(true);
   setActionState(operation, "loading");
   try {
-    const { coordinator } = createOperationCoordinator(state, operation, expected, logProgress);
+    const { client, coordinator } = createOperationCoordinator(state, operation, expected, logProgress);
     const result = await coordinator.execute({
       operation,
       contract: CONTRACT_ADDRESS,
       account: state.account,
       expected,
-      submit,
+      submit: () => submit(client),
       progress: logProgress,
     });
     renderResult(result);
