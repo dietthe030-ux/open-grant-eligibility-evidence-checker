@@ -1,5 +1,5 @@
 import "./styles.css";
-import { WalletRegistry, WalletSession } from "./wallet.js";
+import { WalletRegistry, WalletSession, formatProviderError } from "./wallet.js";
 import {
   CHAIN,
   CHAIN_ID,
@@ -733,7 +733,7 @@ function showError(message) {
 }
 
 function errorMessage(error) {
-  return error instanceof Error ? error.message : String(error);
+  return formatProviderError(error);
 }
 
 function shorten(value) {

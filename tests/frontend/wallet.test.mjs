@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { WalletRegistry, WalletSession, normalizeChainId, supportedWallet } from "../../frontend/src/wallet.js";
+import { WalletRegistry, WalletSession, formatProviderError, normalizeChainId, supportedWallet } from "../../frontend/src/wallet.js";
 
 const provider = { request: async ({ method }) => method === "eth_getBalance" ? "0x1" : ["0x1111111111111111111111111111111111111111"] };
 const detail = (uuid = "meta-1", currentProvider = provider) => ({
@@ -161,4 +161,11 @@ test("chain IDs normalize decimal and hexadecimal forms", () => {
   assert.equal(normalizeChainId("0xf22f"), 61999);
   assert.equal(normalizeChainId("61999"), 61999);
   assert.equal(normalizeChainId("nope"), undefined);
+});
+
+test("provider errors remain user-facing for rejection, authorization and unknown objects", () => {
+  assert.equal(formatProviderError({ code: 4001 }), "Wallet request was rejected.");
+  assert.equal(formatProviderError({ data: { originalError: { code: 4100 } } }), "Wallet authorization is required. Choose the wallet again.");
+  assert.equal(formatProviderError({ message: "Provider unavailable" }), "Provider unavailable");
+  assert.equal(formatProviderError({ reason: "opaque" }), "Wallet request failed. Please try again.");
 });

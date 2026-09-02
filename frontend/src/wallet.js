@@ -12,6 +12,15 @@ function isProvider(value) {
   return Boolean(value && typeof value === "object" && typeof value.request === "function");
 }
 
+export function formatProviderError(error) {
+  if (error instanceof Error && error.message) return error.message;
+  const code = error?.code ?? error?.data?.originalError?.code;
+  if (code === 4001) return "Wallet request was rejected.";
+  if (code === 4100) return "Wallet authorization is required. Choose the wallet again.";
+  if (typeof error?.message === "string" && error.message.trim()) return error.message;
+  return "Wallet request failed. Please try again.";
+}
+
 function isAnnouncement(value) {
   if (!value || typeof value !== "object") return false;
   const info = value.info;
