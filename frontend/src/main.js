@@ -355,11 +355,7 @@ async function submitAssess(retry) {
   if (!applicationId) return showError("Enter an application ID first.");
   let expected;
   try {
-    expected = assessmentExpectedState(
-      retry,
-      applicationId,
-      retry ? await getApplicationSnapshot(applicationId) : undefined
-    );
+    expected = assessmentExpectedState(retry, applicationId, await getApplicationSnapshot(applicationId));
   } catch (error) {
     return showError(errorMessage(error));
   }

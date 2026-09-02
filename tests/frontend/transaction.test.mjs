@@ -54,11 +54,19 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
   assert.equal(positive.retryCount, 0);
 
+  const unresolved = assessmentExpectedState(false, "unresolved", { grant_url: "https://httpbin.org/json" });
+  assert.equal(unresolved.outcome, "UNRESOLVED");
+  assert.deepEqual(unresolved.matchedCriteria, []);
+  assert.equal(unresolved.evidenceDigest, "");
+  assert.equal(unresolved.sourceObservedAt, 0);
+  assert.equal(unresolved.lastReason, "SOURCE_INVALID_OR_UNBOUND");
+
   const retry = assessmentExpectedState(true, "unresolved", { state: "ASSESSED", outcome: "UNRESOLVED" });
   assert.equal(retry.outcome, "UNRESOLVED");
   assert.deepEqual(retry.matchedCriteria, []);
   assert.equal(retry.evidenceDigest, "");
   assert.equal(retry.sourceObservedAt, 0);
+  assert.equal(retry.lastReason, "SOURCE_INVALID_OR_UNBOUND");
   assert.equal(retry.minimumRetryCount, 1);
   assert.throws(() => assessmentExpectedState(true, "positive", { state: "ASSESSED", outcome: "ELIGIBLE" }), /not retryable/i);
 });

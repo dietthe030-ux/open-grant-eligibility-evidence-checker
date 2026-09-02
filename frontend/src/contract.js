@@ -52,6 +52,8 @@ export function expectedState(state, applicationId, postconditions = {}) {
 }
 
 const POSITIVE_EVIDENCE_DIGEST = "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961";
+const POSITIVE_FIXTURE_URL = "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json";
+const UNRESOLVED_FIXTURE_URL = "https://httpbin.org/json";
 
 export function assessmentExpectedState(retry, applicationId, current) {
   if (retry) {
@@ -64,8 +66,27 @@ export function assessmentExpectedState(retry, applicationId, current) {
       failedCriteria: [],
       evidenceDigest: "",
       sourceObservedAt: 0,
+      lastReason: "SOURCE_INVALID_OR_UNBOUND",
       requireAssessmentFields: true,
       minimumRetryCount: 1,
+    });
+  }
+  if (current?.grant_url === UNRESOLVED_FIXTURE_URL) {
+    return expectedState("ASSESSED", applicationId, {
+      outcome: "UNRESOLVED",
+      matchedCriteria: [],
+      failedCriteria: [],
+      evidenceDigest: "",
+      sourceObservedAt: 0,
+      lastReason: "SOURCE_INVALID_OR_UNBOUND",
+      requireAssessmentFields: true,
+      retryCount: 0,
+    });
+  }
+  if (current?.grant_url && current.grant_url !== POSITIVE_FIXTURE_URL) {
+    return expectedState("ASSESSED", applicationId, {
+      outcomes: ["ELIGIBLE", "NOT_ELIGIBLE", "UNRESOLVED"],
+      requireAssessmentFields: true,
     });
   }
   return expectedState("ASSESSED", applicationId, {
@@ -98,6 +119,9 @@ export function assertApplicationReadback(result, expected) {
   }
   if (expected.evidenceDigest !== undefined && result.evidence_digest !== expected.evidenceDigest) {
     throw new Error("Readback mismatch: evidence digest differs.");
+  }
+  if (expected.lastReason !== undefined && result.last_reason !== expected.lastReason) {
+    throw new Error("Readback mismatch: assessment reason differs.");
   }
   if (expected.requireAssessmentFields) {
     if (!Array.isArray(result.matched_criteria) || !Array.isArray(result.failed_criteria)) {
