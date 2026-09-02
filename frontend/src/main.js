@@ -11,6 +11,7 @@ import {
   expectedState,
   assessmentExpectedState,
 } from "./contract.js";
+import { parseUtcEpoch } from "./time.js";
 
 const registry = new WalletRegistry(window);
 const session = new WalletSession(CHAIN_ID, renderConnection, CHAIN);
@@ -707,12 +708,12 @@ function textField(data, name) {
 
 function epochField(data, name) {
   const value = String(data.get(name) ?? "");
-  const date = value ? new Date(`${value}:00Z`) : new Date("invalid");
-  if (!Number.isFinite(date.getTime())) {
+  const epoch = parseUtcEpoch(value);
+  if (epoch === undefined) {
     showError(`${name} must be a valid UTC date.`);
     return undefined;
   }
-  return Math.floor(date.getTime() / 1000);
+  return epoch;
 }
 
 function utcField(data, name) {

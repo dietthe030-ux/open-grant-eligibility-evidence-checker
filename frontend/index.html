@@ -168,7 +168,7 @@
             </div>
             <div class="field-group">
               <label for="create-submitted-at">Submitted at (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-              <input id="create-submitted-at" name="submittedAt" type="datetime-local" required />
+              <input id="create-submitted-at" name="submittedAt" type="datetime-local" step="1" required />
               <span class="field-hint">UTC timestamp for self-declared application submission</span>
             </div>
             <div class="form-actions">
@@ -210,16 +210,16 @@
             </div>
             <div class="field-group">
               <label for="freeze-deadline-utc">Published deadline (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-              <input id="freeze-deadline-utc" name="deadlineUtc" type="datetime-local" required />
+              <input id="freeze-deadline-utc" name="deadlineUtc" type="datetime-local" step="1" required />
             </div>
             <div class="field-row">
               <div class="field-group">
                 <label for="freeze-obs-start">Observation starts (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-obs-start" name="observationNotBefore" type="datetime-local" required />
+                <input id="freeze-obs-start" name="observationNotBefore" type="datetime-local" step="1" required />
               </div>
               <div class="field-group">
                 <label for="freeze-obs-end">Observation ends (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-obs-end" name="observationNotAfter" type="datetime-local" required />
+                <input id="freeze-obs-end" name="observationNotAfter" type="datetime-local" step="1" required />
               </div>
             </div>
             <div class="form-actions">

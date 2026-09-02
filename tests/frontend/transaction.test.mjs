@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN } from "../../frontend/src/transaction.js";
 import { assertApplicationReadback, assessmentExpectedState } from "../../frontend/src/contract.js";
+import { parseUtcEpoch } from "../../frontend/src/time.js";
 
 const HASH = `0x${"a".repeat(64)}`;
 const ACCOUNT = `0x${"1".repeat(40)}`;
@@ -60,6 +61,13 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   assert.equal(retry.sourceObservedAt, 0);
   assert.equal(retry.minimumRetryCount, 1);
   assert.throws(() => assessmentExpectedState(true, "positive", { state: "ASSESSED", outcome: "ELIGIBLE" }), /not retryable/i);
+});
+
+test("UTC form timestamps preserve exact seconds for transaction arguments", () => {
+  assert.equal(parseUtcEpoch("2026-12-31T23:58:20"), 1798761500);
+  assert.equal(parseUtcEpoch("2026-12-31T23:33:20"), 1798760000);
+  assert.equal(parseUtcEpoch("2027-01-01T00:06:40"), 1798762000);
+  assert.equal(parseUtcEpoch("invalid"), undefined);
 });
 
 test("coordinator submits once and clears journal only after readback", async () => {
