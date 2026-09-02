@@ -111,6 +111,13 @@ export function createWriteCoordinator({
     return legacy;
   }
 
+  function legacyBlocks(expected) {
+    const legacy = legacyStorageKey && legacyStorageKey !== storageKey ? read(legacyStorageKey) : undefined;
+    const applicationId = expected?.applicationId;
+    return Boolean(legacy && applicationId &&
+      (legacy.expected?.applicationId ?? legacy.applicationId) === applicationId);
+  }
+
   function requireStorage() {
     try {
       storage.setItem(probeKey, "1");
@@ -163,7 +170,7 @@ export function createWriteCoordinator({
   }
 
   async function execute({ operation, contract, account, expected, submit, progress = () => {} }) {
-    if (inFlight || load()) throw new Error("A write is still pending reconciliation.");
+    if (inFlight || load() || legacyBlocks(expected)) throw new Error("A write is still pending reconciliation.");
     requireStorage();
     inFlight = true;
     try {

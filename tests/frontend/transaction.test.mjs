@@ -124,6 +124,21 @@ test("multiple pending applications remain independently recoverable", async () 
   assert.deepEqual(recovered, ["one", "two"]);
 });
 
+test("a legacy pending application blocks only a write for that same application", async () => {
+  const journal = storage();
+  journal.setItem("legacy", JSON.stringify({ version: 1, operation: "write", hash: HASH, contract: CONTRACT, account: ACCOUNT, expected: { applicationId: "old" } }));
+  const coordinator = createWriteCoordinator({
+    storage: journal,
+    storageKey: "scoped.new",
+    legacyStorageKey: "legacy",
+    waitForFinalized: async () => success,
+    readback: async () => ({ state: "DRAFT" }),
+    assertReadback: () => {},
+  });
+  await assert.rejects(() => coordinator.execute({ operation: "write", contract: CONTRACT, account: ACCOUNT, expected: { applicationId: "old" }, submit: async () => HASH }), /pending reconciliation/i);
+  await assert.doesNotReject(() => coordinator.execute({ operation: "write", contract: CONTRACT, account: ACCOUNT, expected: { applicationId: "new" }, submit: async () => `0x${"c".repeat(64)}` }));
+});
+
 test("coordinator submits once and clears journal only after readback", async () => {
   const journal = storage();
   let submits = 0;

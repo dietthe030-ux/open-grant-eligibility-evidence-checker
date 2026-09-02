@@ -419,10 +419,15 @@ function pendingRecords() {
       const key = localStorage.key(index);
       if (key?.startsWith(PENDING_STORAGE_PREFIX)) keys.push(key);
     }
+    const byHash = new Map();
     for (const storageKey of new Set(keys)) {
       const pending = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-      if (pending?.hash) records.push({ pending, storageKey });
+      if (pending?.hash) {
+        const record = { pending, storageKey };
+        if (!byHash.has(pending.hash) || storageKey !== LEGACY_PENDING_STORAGE_KEY) byHash.set(pending.hash, record);
+      }
     }
+    records.push(...byHash.values());
   } catch {
     return [];
   }
