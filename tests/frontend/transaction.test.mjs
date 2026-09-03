@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN } from "../../frontend/src/transaction.js";
+import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN, TransientTransportError, waitForFinalized } from "../../frontend/src/transaction.js";
 import { assertApplicationReadback, assessmentExpectedState, pendingStorageKey } from "../../frontend/src/contract.js";
 import { parseUtcEpoch } from "../../frontend/src/time.js";
+import transportFaultHandler from "../../frontend/api/e2e-transport-fault.js";
 
 const HASH = `0x${"a".repeat(64)}`;
 const ACCOUNT = `0x${"1".repeat(40)}`;
@@ -196,4 +197,90 @@ test("coordinator exposes a degraded current-session hash without resubmitting",
   assert.equal(events[0].persistenceDegraded, true);
   assert.equal(journal.getItem("pending"), null);
   assert.equal(coordinator.load().hash, HASH);
+});
+
+test("finality polling retries one transient 503 with bounded delay and the same hash", async () => {
+  const calls = [];
+  const delays = [];
+  const retries = [];
+  const client = {
+    getTransaction: async ({ hash }) => {
+      calls.push(hash);
+      if (calls.length === 1) throw new TransientTransportError("RPC server returned HTTP 503.", { status: 503, retryAfterMs: 1000 });
+      return success;
+    },
+  };
+  const result = await waitForFinalized(client, HASH, {
+    maxPolls: 1,
+    maxTransportRetries: 1,
+    sleep: async (ms) => delays.push(ms),
+    onTransportError: (event) => retries.push(event),
+  });
+  assert.equal(result, success);
+  assert.deepEqual(calls, [HASH, HASH]);
+  assert.deepEqual(delays, [1000]);
+  assert.equal(retries[0].attempt, 1);
+});
+
+test("finality polling caps Retry-After and recognizes fetch failures only by transport message", async () => {
+  const delays = [];
+  let calls = 0;
+  await waitForFinalized({ getTransaction: async () => {
+    calls += 1;
+    if (calls === 1) throw new TransientTransportError("server busy", { status: 503, retryAfterMs: 60000 });
+    return success;
+  } }, HASH, { maxPolls: 1, transportRetryMaxMs: 5000, sleep: async (ms) => delays.push(ms) });
+  assert.deepEqual(delays, [5000]);
+  await assert.rejects(() => waitForFinalized({ getTransaction: async () => { throw new TypeError("programming mistake"); } }, HASH), /programming mistake/);
+});
+
+test("finality polling does not retry unknown errors or exceed the transport bound", async () => {
+  let unknownCalls = 0;
+  await assert.rejects(() => waitForFinalized({ getTransaction: async () => { unknownCalls += 1; throw new Error("bad input"); } }, HASH, { maxTransportRetries: 2 }), /bad input/);
+  assert.equal(unknownCalls, 1);
+
+  let transientCalls = 0;
+  await assert.rejects(() => waitForFinalized({ getTransaction: async () => {
+    transientCalls += 1;
+    throw new TransientTransportError("HTTP 503", { status: 503 });
+  } }, HASH, { maxTransportRetries: 1, sleep: async () => {}, random: () => 0 }), /HTTP 503/);
+  assert.equal(transientCalls, 2);
+});
+
+test("controlled E2E transport endpoint returns one retryable no-store 503 response", () => {
+  const headers = new Map();
+  const response = {
+    setHeader: (name, value) => headers.set(name, value),
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; return this; },
+  };
+  transportFaultHandler({ query: { e2e_transport_fault: "once" } }, response);
+  assert.equal(response.statusCode, 503);
+  assert.equal(headers.get("Cache-Control"), "no-store");
+  assert.equal(headers.get("Retry-After"), "1");
+  assert.deepEqual(response.body, { error: "Controlled E2E transport failure" });
+});
+
+test("controlled E2E transport endpoint is unavailable without the server-side query gate", () => {
+  const response = {
+    setHeader() {},
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; return this; },
+  };
+  transportFaultHandler({ query: {} }, response);
+  assert.equal(response.statusCode, 404);
+  assert.deepEqual(response.body, { error: "Not found" });
+});
+
+test("finality polling cancels during transport backoff without another status request", async () => {
+  const controller = new AbortController();
+  let calls = 0;
+  const waiting = waitForFinalized({ getTransaction: async () => {
+    calls += 1;
+    throw new TransientTransportError("HTTP 503", { status: 503, retryAfterMs: 5000 });
+  } }, HASH, { signal: controller.signal });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  controller.abort();
+  await assert.rejects(waiting, { name: "AbortError" });
+  assert.equal(calls, 1);
 });

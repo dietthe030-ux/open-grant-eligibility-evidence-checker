@@ -10,6 +10,7 @@ import {
   isConfigured,
   expectedState,
   assessmentExpectedState,
+  controlledTransportFaultEnabled,
   LEGACY_PENDING_STORAGE_KEY,
   PENDING_STORAGE_PREFIX,
 } from "./contract.js";
@@ -42,6 +43,8 @@ const elements = {
 
 let providers = [];
 let busy = false;
+let activeOperationController;
+window.addEventListener("pagehide", () => activeOperationController?.abort());
 let actionStateTimer;
 
 // -------------------------------------------------------------
@@ -55,6 +58,9 @@ registry.start();
 renderConnection(session.snapshot());
 renderConfiguration();
 renderPendingNotice();
+if (controlledTransportFaultEnabled()) {
+  appendLog("E2E transport control", "The next finality check will receive one controlled HTTP 503, then retry the same hash without resubmitting.", "warn");
+}
 
 // -------------------------------------------------------------
 // Wallet Control & Popover Interactions
@@ -83,6 +89,7 @@ elements.changeWallet?.addEventListener("click", (event) => {
 elements.disconnectWallet?.addEventListener("click", (event) => {
   event.stopPropagation();
   closeWalletMenu();
+  activeOperationController?.abort();
   session.clear("Wallet disconnected.");
   appendLog("Wallet", "Wallet session closed by user.", "info");
 });
@@ -384,10 +391,11 @@ async function runWrite(operation, expected, submit) {
   if (!isConfigured()) return showError("Contract address is not configured. Transactions cannot be submitted.");
 
   busy = true;
+  activeOperationController = new AbortController();
   toggleActions(true);
   setActionState(operation, "loading");
   try {
-    const { client, coordinator } = createOperationCoordinator(state, operation, expected, logProgress);
+    const { client, coordinator } = createOperationCoordinator(state, operation, expected, logProgress, activeOperationController.signal);
     const result = await coordinator.execute({
       operation,
       contract: CONTRACT_ADDRESS,
@@ -403,6 +411,7 @@ async function runWrite(operation, expected, submit) {
     setActionState(operation, "error");
     appendLog(operation, errorMessage(error), "error");
   } finally {
+    activeOperationController = undefined;
     busy = false;
     toggleActions(false);
   }
@@ -451,14 +460,18 @@ async function offerPendingReconciliation() {
     button.textContent = `Reconcile ${pending.applicationId ?? pending.expected?.applicationId ?? "pending transaction"}`;
     button.addEventListener("click", async () => {
       button.disabled = true;
+      const controller = new AbortController();
+      activeOperationController = controller;
       try {
-        const { coordinator } = createOperationCoordinator(state, pending.operation, pending.expected, logProgress);
+        const { coordinator } = createOperationCoordinator(state, pending.operation, pending.expected, logProgress, controller.signal);
         const result = await coordinator.resume(logProgress);
         renderResult(result);
         appendLog("Recovery", "Pending transaction reconciled and readback verified.", "ok");
       } catch (error) {
         appendLog("Recovery", errorMessage(error), "error");
         button.disabled = false;
+      } finally {
+        if (activeOperationController === controller) activeOperationController = undefined;
       }
     });
     elements.log.prepend(button);
@@ -632,6 +645,13 @@ function logProgress(event) {
     appendLog("Finality", `Awaiting GenLayer finality confirmation${status}.`, "info", event.hash);
   } else if (event.phase === "readback") {
     appendLog("Readback", "Fetching authoritative on-chain state to verify postconditions.", "info", event.hash);
+  } else if (event.phase === "transport-retry") {
+    appendLog(
+      "Transport recovery",
+      `${event.message} Retrying the same hash in ${event.delayMs} ms (${event.attempt}/${event.maxRetries}); no transaction was resubmitted.`,
+      "warn",
+      event.hash,
+    );
   }
 }
 

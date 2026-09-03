@@ -1,6 +1,6 @@
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
-import { createWriteCoordinator, parseContractJson, waitForFinalized } from "./transaction.js";
+import { createWriteCoordinator, parseContractJson, TransientTransportError, waitForFinalized } from "./transaction.js";
 
 const env = import.meta.env ?? {};
 export const CONTRACT_ADDRESS = String(env.VITE_CONTRACT_ADDRESS ?? "").trim();
@@ -9,6 +9,9 @@ export const CHAIN_ID = Number(studionet.id);
 export const EXPLORER_URL = "https://explorer-studio.genlayer.com";
 export const LEGACY_PENDING_STORAGE_KEY = "open-grant-eligibility.pending-write.v1";
 export const PENDING_STORAGE_PREFIX = `${LEGACY_PENDING_STORAGE_KEY}.`;
+const CONTROLLED_TRANSPORT_ENDPOINT = "/api/e2e-transport-fault";
+let controlledTransportFaultPending = typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("e2e_transport_fault") === "once";
 
 export function pendingStorageKey(applicationId) {
   const normalized = String(applicationId ?? "").trim();
@@ -33,7 +36,32 @@ export function createReadClient() {
 export function createWriteClient(session) {
   requireConfigured();
   if (!session?.provider || !session.account) throw new Error("Connect a supported wallet first.");
-  return createClient({ chain: CHAIN, account: session.account, provider: session.provider });
+  const client = createClient({ chain: CHAIN, account: session.account, provider: session.provider });
+  if (!controlledTransportFaultPending) return client;
+  const getTransaction = client.getTransaction.bind(client);
+  client.getTransaction = async (parameters) => {
+    if (controlledTransportFaultPending) {
+      controlledTransportFaultPending = false;
+      const response = await fetch(`${CONTROLLED_TRANSPORT_ENDPOINT}?e2e_transport_fault=once`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method: "gen_getTransaction", params: [parameters.hash] }),
+      });
+      if (!response.ok) {
+        const retryAfterSeconds = Number(response.headers.get("Retry-After"));
+        throw new TransientTransportError(`RPC server returned HTTP ${response.status}.`, {
+          status: response.status,
+          retryAfterMs: Number.isFinite(retryAfterSeconds) ? retryAfterSeconds * 1000 : undefined,
+        });
+      }
+    }
+    return getTransaction(parameters);
+  };
+  return client;
+}
+
+export function controlledTransportFaultEnabled() {
+  return controlledTransportFaultPending;
 }
 
 export async function readApplication(client, applicationId) {
@@ -147,13 +175,22 @@ export function assertApplicationReadback(result, expected) {
   return result;
 }
 
-export function createOperationCoordinator(session, operation, expected, onProgress) {
+export function createOperationCoordinator(session, operation, expected, onProgress, signal) {
   const client = createWriteClient(session);
   const coordinator = createWriteCoordinator({
     storageKey: pendingStorageKey(expected?.applicationId),
     legacyStorageKey: LEGACY_PENDING_STORAGE_KEY,
     waitForFinalized: (hash) => waitForFinalized(client, hash, {
+      signal,
       onPoll: (state) => onProgress?.({ phase: "finalizing", hash, state }),
+      onTransportError: ({ attempt, maxRetries, delayMs, error }) => onProgress?.({
+        phase: "transport-retry",
+        hash,
+        attempt,
+        maxRetries,
+        delayMs,
+        message: error instanceof Error ? error.message : String(error),
+      }),
     }),
     readback: (pending) => readApplication(client, pending.expected.applicationId),
     assertReadback: assertApplicationReadback,

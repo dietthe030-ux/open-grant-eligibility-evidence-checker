@@ -14,6 +14,39 @@ export class TerminalTransactionError extends Error {
   }
 }
 
+export class TransientTransportError extends Error {
+  constructor(message, { status, retryAfterMs } = {}) {
+    super(message);
+    this.name = "TransientTransportError";
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+export function isTransientTransportError(error) {
+  const status = Number(error?.status ?? error?.statusCode ?? error?.cause?.status);
+  if ([408, 425, 429, 500, 502, 503, 504].includes(status)) return true;
+  if (error?.name === "TransientTransportError") return true;
+  return /fetch|network|timeout|timed out|rate limit|server busy|temporar|HTTP (?:408|425|429|500|502|503|504)/i
+    .test(String(error?.message ?? error ?? ""));
+}
+
+function abortableSleep(ms, signal) {
+  if (!signal) return new Promise((resolve) => setTimeout(resolve, ms));
+  signal.throwIfAborted();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    function onAbort() {
+      clearTimeout(timer);
+      reject(signal.reason ?? new DOMException("The operation was aborted.", "AbortError"));
+    }
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 export function classifyTransaction(transaction) {
   const value = transaction && typeof transaction === "object" ? transaction : {};
   const status = String(value.statusName ?? value.status ?? "").toUpperCase();
@@ -203,17 +236,39 @@ export function createWriteCoordinator({
 export async function waitForFinalized(client, hash, {
   maxPolls = 60,
   intervalMs = 2500,
-  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  maxTransportRetries = 2,
+  transportRetryBaseMs = 500,
+  transportRetryMaxMs = 5000,
+  random = Math.random,
+  sleep = abortableSleep,
+  signal,
   onPoll = () => {},
+  onTransportError = () => {},
 } = {}) {
   let last;
-  for (let poll = 0; poll < maxPolls; poll += 1) {
-    last = await client.getTransaction({ hash });
+  let poll = 0;
+  let transportRetries = 0;
+  while (poll < maxPolls) {
+    signal?.throwIfAborted();
+    try {
+      last = await client.getTransaction({ hash });
+    } catch (error) {
+      if (!isTransientTransportError(error) || transportRetries >= maxTransportRetries) throw error;
+      transportRetries += 1;
+      const backoff = transportRetryBaseMs * (2 ** (transportRetries - 1));
+      const jitter = Math.floor(backoff * 0.25 * random());
+      const requestedDelay = Number.isFinite(error?.retryAfterMs) ? error.retryAfterMs : backoff + jitter;
+      const delayMs = Math.max(0, Math.min(requestedDelay, transportRetryMaxMs));
+      onTransportError({ attempt: transportRetries, maxRetries: maxTransportRetries, delayMs, error });
+      await sleep(delayMs, signal);
+      continue;
+    }
+    poll += 1;
     const state = classifyTransaction(last);
     onPoll(state, last);
     if (state.finalized) return last;
     if (["CANCELED", "VALIDATORS_TIMEOUT", "LEADER_TIMEOUT"].includes(state.status)) return last;
-    if (poll + 1 < maxPolls) await sleep(intervalMs);
+    if (poll < maxPolls) await sleep(intervalMs, signal);
   }
   throw new Error(`Timed out waiting for FINALIZED. Last status: ${classifyTransaction(last).status || "unknown"}.`);
 }
