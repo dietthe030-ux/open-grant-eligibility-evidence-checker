@@ -10,20 +10,22 @@ The contract produces an evidence signal, not a legal or funding guarantee. Appl
 
 ## Contract
 
-`contracts/open_grant_eligibility_evidence_checker.py` stores applications in `TreeMap[str, Application]`.
+`contracts/open_grant_eligibility_evidence_checker.py` stores an owner-managed publisher allowlist, immutable grant specifications, and applications.
 
 Workflow:
 
-1. Applicant calls `create_application`.
-2. Applicant calls `freeze_application` with the three canonical criterion IDs, deadline, and observation window.
-3. Any assessor calls `assess_application`.
-4. An unavailable source can be retried with `retry_unresolved` up to two times.
+1. The contract owner authorizes a publisher with `set_publisher_authorization` (the deployer is authorized initially).
+2. That publisher calls `register_grant_specification`, binding a unique specification ID to its canonical HTTPS URL, expected canonical JSON SHA-256, criterion IDs, deadline, and observation window. Specification IDs are immutable.
+3. An applicant calls `create_application` with that registered specification ID and only applicant-declared facts. The contract snapshots the publisher-bound terms; the applicant cannot supply or replace them.
+4. The applicant calls `freeze_application(application_id)` to seal that snapshot without any rule or source arguments.
+5. Any assessor calls `assess_application`. An unavailable source can be retried with `retry_unresolved` up to two times.
 
-The source at `grant_url` must be a bounded JSON object with this shape:
+The source bound by the authorized publisher must be a bounded JSON object with this shape:
 
 ```json
 {
   "canonical_url": "https://example.org/grant.json",
+  "specification_id": "open-grant-2027-v1",
   "observed_at": 1798761500,
   "criterion_ids": {
     "region": "region-1",
@@ -36,7 +38,7 @@ The source at `grant_url` must be a bounded JSON object with this shape:
 }
 ```
 
-Validators independently refetch and rederive the consequential result. Unavailable, malformed, stale, or unbound evidence never becomes a negative eligibility decision.
+Validators independently refetch and rederive the consequential result. The fetched canonical JSON digest must equal the digest precommitted by the authorized publisher, and leader/validator equivalence includes that digest. Unauthorized registration, source/specification identity mismatch, digest mismatch, unavailable, malformed, stale, or otherwise unbound evidence cannot produce a conclusive eligibility result.
 
 ## Local verification
 
@@ -61,7 +63,7 @@ npm run build
 
 The wallet chooser supports MetaMask, OKX Wallet, and Rabby through EIP-6963. It never requests accounts when the chooser opens. Writes are single-flight, persist the transaction hash when browser storage is available, poll the GenLayer transaction object for `FINALIZED` plus `MAJORITY_AGREE`, require semantic `FINISHED_WITH_RETURN`, and then perform an application readback. If storage persistence degrades after submission, the hash is retained only for the current page and the UI instructs the user not to retry.
 
-The contract has been deployed to Studionet at `0x5F4CcBD152F3752944e669Ad935d5a358369d939`. The public GitHub repository is [dietthe030-ux/open-grant-eligibility-evidence-checker](https://github.com/dietthe030-ux/open-grant-eligibility-evidence-checker), and the current public Vercel release is [open-grant-eligibility-evidence-che.vercel.app](https://open-grant-eligibility-evidence-che.vercel.app/). Final Vercel E2E remains a separately gated checkpoint and is not claimed by this README.
+The prior Studionet deployment and Vercel release implement the superseded applicant-selected-source model and are not valid evidence for this authority repair. The repaired contract requires a new PRE_DEPLOY review and a new deployment before the frontend can be released against it. The repository target remains [dietthe030-ux/open-grant-eligibility-evidence-checker](https://github.com/dietthe030-ux/open-grant-eligibility-evidence-checker).
 
 ## Official technical references
 

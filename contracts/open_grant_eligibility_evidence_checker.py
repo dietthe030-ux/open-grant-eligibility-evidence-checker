@@ -17,14 +17,32 @@ MAX_ID = 96
 MAX_TEXT = 128
 MAX_URL = 2048
 MAX_SOURCE = 120_000
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 UTC_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+
+@allow_storage
+@dataclass
+class GrantSpecification:
+    publisher: Address
+    grant_url: str
+    expected_evidence_digest: str
+    region_criterion_id: str
+    org_type_criterion_id: str
+    deadline_criterion_id: str
+    deadline_utc: str
+    observation_not_before: u64
+    observation_not_after: u64
 
 
 @allow_storage
 @dataclass
 class Application:
     owner: Address
+    grant_specification_id: str
+    publisher: Address
     grant_url: str
+    expected_evidence_digest: str
     region: str
     org_type: str
     submitted_at: u64
@@ -60,6 +78,13 @@ def _url(value: str) -> str:
     normalized = _text(value, "grant_url", MAX_URL)
     if not normalized.startswith("https://") or any(char.isspace() for char in normalized):
         _fail("grant_url must be an https URL")
+    return normalized
+
+
+def _digest(value: str) -> str:
+    normalized = str(value).strip()
+    if not SHA256_RE.match(normalized):
+        _fail("invalid evidence_digest")
     return normalized
 
 
@@ -101,7 +126,7 @@ def _string_list(value, label: str) -> list:
     return sorted(values)
 
 
-def _source_payload(response, expected_url: str) -> dict:
+def _source_payload(response, expected_url: str, expected_specification_id: str) -> dict:
     if int(response.status) != 200:
         raise ValueError("source is not available")
     body = _body(response)
@@ -109,7 +134,9 @@ def _source_payload(response, expected_url: str) -> dict:
     if not isinstance(payload, dict):
         raise ValueError("source must be an object")
     if payload.get("canonical_url") != expected_url:
-        raise ValueError("source URL does not match the frozen grant")
+        raise ValueError("SOURCE_IDENTITY_MISMATCH")
+    if payload.get("specification_id") != expected_specification_id:
+        raise ValueError("SPECIFICATION_IDENTITY_MISMATCH")
     observed_at = payload.get("observed_at")
     if isinstance(observed_at, bool) or not isinstance(observed_at, int):
         raise ValueError("invalid source observation time")
@@ -160,7 +187,9 @@ def _is_transient_web_error(error: Exception) -> bool:
 
 
 def _evaluate(
+    grant_specification_id: str,
     grant_url: str,
+    expected_evidence_digest: str,
     region: str,
     org_type: str,
     submitted_at: u64,
@@ -183,11 +212,19 @@ def _evaluate(
             return _result("UNRESOLVED", [], [], "", 0, "SOURCE_UNAVAILABLE")
         return _result("UNRESOLVED", [], [], "", 0, "SOURCE_NOT_FOUND")
     try:
-        source = _source_payload(response, grant_url)
+        source = _source_payload(response, grant_url, grant_specification_id)
     except KeyError:
         return _result("CRITERIA_MISSING", [], [], "", 0, "CRITERIA_MISSING")
+    except ValueError as error:
+        reason = str(error)
+        if reason in ("SOURCE_IDENTITY_MISMATCH", "SPECIFICATION_IDENTITY_MISMATCH"):
+            return _result("UNRESOLVED", [], [], "", 0, reason)
+        return _result("UNRESOLVED", [], [], "", 0, "SOURCE_INVALID_OR_UNBOUND")
     except Exception:
         return _result("UNRESOLVED", [], [], "", 0, "SOURCE_INVALID_OR_UNBOUND")
+
+    if source["digest"] != expected_evidence_digest:
+        return _result("UNRESOLVED", [], [], source["digest"], source["observed_at"], "EVIDENCE_DIGEST_MISMATCH")
 
     if not (observation_not_before <= source["observed_at"] <= observation_not_after):
         return _result("UNRESOLVED", [], [], source["digest"], source["observed_at"], "OBSERVATION_OUTSIDE_WINDOW")
@@ -197,7 +234,7 @@ def _evaluate(
         or source["deadline_id"] != deadline_criterion_id
         or source["deadline_utc"] != deadline_utc
     ):
-        return _result("UNRESOLVED", [], [], source["digest"], source["observed_at"], "FROZEN_CRITERIA_MISMATCH")
+        return _result("UNRESOLVED", [], [], source["digest"], source["observed_at"], "PUBLISHER_SPECIFICATION_MISMATCH")
 
     region_ok = region in source["allowed_regions"]
     org_type_ok = org_type in source["allowed_org_types"]
@@ -215,37 +252,89 @@ def _same_consequence(leader_json: str, validator_json: str) -> bool:
     validator = json.loads(validator_json)
     if not isinstance(leader, dict) or not isinstance(validator, dict):
         return False
-    return all(leader.get(key) == validator.get(key) for key in ("outcome", "matched_criteria", "failed_criteria", "source_observed_at", "reason"))
+    return all(leader.get(key) == validator.get(key) for key in ("outcome", "matched_criteria", "failed_criteria", "evidence_digest", "source_observed_at", "reason"))
 
 
 class OpenGrantEligibilityEvidenceChecker(gl.Contract):
+    owner: Address
+    authorized_publishers: TreeMap[Address, bool]
+    grant_specifications: TreeMap[str, GrantSpecification]
     applications: TreeMap[str, Application]
+    grant_specification_count: u32
     application_count: u32
 
     def __init__(self):
+        self.owner = gl.message.sender_address
+        self.authorized_publishers[self.owner] = True
+        self.grant_specification_count = 0
         self.application_count = 0
 
     @gl.public.write
-    def create_application(self, application_id: str, grant_url: str, region: str, org_type: str, submitted_at: u64) -> None:
+    def set_publisher_authorization(self, publisher: str, authorized: bool) -> None:
+        if gl.message.sender_address != self.owner:
+            _fail("only the contract owner can manage publishers")
+        self.authorized_publishers[Address(publisher)] = bool(authorized)
+
+    @gl.public.write
+    def register_grant_specification(
+        self,
+        grant_specification_id: str,
+        grant_url: str,
+        expected_evidence_digest: str,
+        region_criterion_id: str,
+        org_type_criterion_id: str,
+        deadline_criterion_id: str,
+        deadline_utc: str,
+        observation_not_before: u64,
+        observation_not_after: u64,
+    ) -> None:
+        grant_specification_id = _text(grant_specification_id, "grant_specification_id", MAX_ID)
+        if not self.authorized_publishers.get(gl.message.sender_address, False):
+            _fail("publisher is not authorized")
+        if grant_specification_id in self.grant_specifications:
+            _fail("grant specification already exists")
+        if observation_not_before > observation_not_after:
+            _fail("invalid observation window")
+        self.grant_specifications[grant_specification_id] = GrantSpecification(
+            gl.message.sender_address,
+            _url(grant_url),
+            _digest(expected_evidence_digest),
+            _text(region_criterion_id, "region_criterion_id", MAX_ID),
+            _text(org_type_criterion_id, "org_type_criterion_id", MAX_ID),
+            _text(deadline_criterion_id, "deadline_criterion_id", MAX_ID),
+            _utc(deadline_utc, "deadline_utc"),
+            observation_not_before,
+            observation_not_after,
+        )
+        self.grant_specification_count = self.grant_specification_count + 1
+
+    @gl.public.write
+    def create_application(self, application_id: str, grant_specification_id: str, region: str, org_type: str, submitted_at: u64) -> None:
         application_id = _text(application_id, "application_id", MAX_ID)
-        grant_url = _url(grant_url)
+        grant_specification_id = _text(grant_specification_id, "grant_specification_id", MAX_ID)
         region = _text(region, "region", MAX_TEXT)
         org_type = _text(org_type, "org_type", MAX_TEXT)
         if application_id in self.applications:
             _fail("application already exists")
+        if grant_specification_id not in self.grant_specifications:
+            _fail("grant specification does not exist")
+        specification = self.grant_specifications[grant_specification_id]
         self.applications[application_id] = Application(
             gl.message.sender_address,
-            grant_url,
+            grant_specification_id,
+            specification.publisher,
+            str(specification.grant_url),
+            str(specification.expected_evidence_digest),
             region,
             org_type,
             submitted_at,
             DECLARED_FACTS_NOTICE,
-            "",
-            "",
-            "",
-            "",
-            0,
-            0,
+            str(specification.region_criterion_id),
+            str(specification.org_type_criterion_id),
+            str(specification.deadline_criterion_id),
+            str(specification.deadline_utc),
+            specification.observation_not_before,
+            specification.observation_not_after,
             "DRAFT",
             "UNRESOLVED",
             "[]",
@@ -258,34 +347,19 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
         self.application_count = self.application_count + 1
 
     @gl.public.write
-    def freeze_application(
-        self,
-        application_id: str,
-        region_criterion_id: str,
-        org_type_criterion_id: str,
-        deadline_criterion_id: str,
-        deadline_utc: str,
-        observation_not_before: u64,
-        observation_not_after: u64,
-    ) -> None:
+    def freeze_application(self, application_id: str) -> None:
         record = self.applications[application_id]
         if gl.message.sender_address != record.owner:
             _fail("only the applicant can freeze")
         if record.state != "DRAFT":
             _fail("application is not draft")
-        if observation_not_before > observation_not_after:
-            _fail("invalid observation window")
-        record.region_criterion_id = _text(region_criterion_id, "region_criterion_id", MAX_ID)
-        record.org_type_criterion_id = _text(org_type_criterion_id, "org_type_criterion_id", MAX_ID)
-        record.deadline_criterion_id = _text(deadline_criterion_id, "deadline_criterion_id", MAX_ID)
-        record.deadline_utc = _utc(deadline_utc, "deadline_utc")
-        record.observation_not_before = observation_not_before
-        record.observation_not_after = observation_not_after
         record.state = "FROZEN"
 
     def _assess_application(self, application_id: str) -> None:
         record = self.applications[application_id]
+        grant_specification_id = str(record.grant_specification_id)
         grant_url = str(record.grant_url)
+        expected_evidence_digest = str(record.expected_evidence_digest)
         region = str(record.region)
         org_type = str(record.org_type)
         submitted_at = int(record.submitted_at)
@@ -298,7 +372,9 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
 
         def leader_fn():
             return _evaluate(
+                grant_specification_id,
                 grant_url,
+                expected_evidence_digest,
                 region,
                 org_type,
                 submitted_at,
@@ -315,7 +391,9 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
                 return False
             try:
                 validator_result = _evaluate(
+                    grant_specification_id,
                     grant_url,
+                    expected_evidence_digest,
                     region,
                     org_type,
                     submitted_at,
@@ -376,7 +454,10 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
             data.update(
                 {
                     "owner": str(record.owner),
+                    "grant_specification_id": str(record.grant_specification_id),
+                    "publisher": str(record.publisher),
                     "grant_url": str(record.grant_url),
+                    "expected_evidence_digest": str(record.expected_evidence_digest),
                     "region": str(record.region),
                     "org_type": str(record.org_type),
                     "submitted_at": int(record.submitted_at),
@@ -402,3 +483,35 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
     @gl.public.view
     def get_application_count(self) -> u32:
         return self.application_count
+
+    @gl.public.view
+    def get_grant_specification(self, grant_specification_id: str) -> str:
+        specification = self.grant_specifications[grant_specification_id]
+        return json.dumps(
+            {
+                "grant_specification_id": grant_specification_id,
+                "publisher": str(specification.publisher),
+                "grant_url": str(specification.grant_url),
+                "expected_evidence_digest": str(specification.expected_evidence_digest),
+                "region_criterion_id": str(specification.region_criterion_id),
+                "org_type_criterion_id": str(specification.org_type_criterion_id),
+                "deadline_criterion_id": str(specification.deadline_criterion_id),
+                "deadline_utc": str(specification.deadline_utc),
+                "observation_not_before": int(specification.observation_not_before),
+                "observation_not_after": int(specification.observation_not_after),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+    @gl.public.view
+    def get_grant_specification_count(self) -> u32:
+        return self.grant_specification_count
+
+    @gl.public.view
+    def get_owner(self) -> str:
+        return str(self.owner)
+
+    @gl.public.view
+    def is_authorized_publisher(self, publisher: str) -> bool:
+        return bool(self.authorized_publishers.get(Address(publisher), False))

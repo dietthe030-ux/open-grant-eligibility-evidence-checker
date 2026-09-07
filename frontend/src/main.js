@@ -7,6 +7,7 @@ import {
   createOperationCoordinator,
   explorerTransactionUrl,
   getApplicationSnapshot,
+  getGrantSpecificationSnapshot,
   isConfigured,
   expectedState,
   assessmentExpectedState,
@@ -290,8 +291,15 @@ async function submitCreate(event) {
   event.preventDefault();
   const data = new FormData(elements.createForm);
   const applicationId = textField(data, "applicationId");
+  const grantSpecificationId = textField(data, "grantSpecificationId");
   const submittedAt = epochField(data, "submittedAt");
-  if (!applicationId || !submittedAt) return;
+  if (!applicationId || !grantSpecificationId || submittedAt === undefined) return;
+  let specification;
+  try {
+    specification = await getGrantSpecificationSnapshot(grantSpecificationId);
+  } catch (error) {
+    return showError(`Grant specification could not be verified on-chain: ${errorMessage(error)}`);
+  }
   elements.actionId.value = applicationId;
   await runWrite(
     "create_application",
@@ -303,6 +311,10 @@ async function submitCreate(event) {
       sourceObservedAt: 0,
       lastReason: "",
       retryCount: 0,
+      grantSpecificationId,
+      publisher: specification.publisher,
+      grantUrl: specification.grant_url,
+      expectedEvidenceDigest: specification.expected_evidence_digest,
     }),
     (client) =>
       client.writeContract({
@@ -310,7 +322,7 @@ async function submitCreate(event) {
         functionName: "create_application",
         args: [
           applicationId,
-          textField(data, "grantUrl"),
+          grantSpecificationId,
           textField(data, "region"),
           textField(data, "orgType"),
           submittedAt,
@@ -323,12 +335,12 @@ async function submitFreeze(event) {
   event.preventDefault();
   const data = new FormData(elements.freezeForm);
   const applicationId = textField(data, "applicationId");
-  const before = epochField(data, "observationNotBefore");
-  const after = epochField(data, "observationNotAfter");
-  const deadline = utcField(data, "deadlineUtc");
-  if (!applicationId || before === undefined || after === undefined || !deadline) return;
-  if (before > after) {
-    return showError("Observation start timestamp must be before or equal to observation end timestamp.");
+  if (!applicationId) return;
+  let current;
+  try {
+    current = await getApplicationSnapshot(applicationId);
+  } catch (error) {
+    return showError(`Application could not be verified on-chain: ${errorMessage(error)}`);
   }
   elements.actionId.value = applicationId;
   await runWrite(
@@ -341,20 +353,16 @@ async function submitFreeze(event) {
       sourceObservedAt: 0,
       lastReason: "",
       retryCount: 0,
+      grantSpecificationId: current.grant_specification_id,
+      publisher: current.publisher,
+      grantUrl: current.grant_url,
+      expectedEvidenceDigest: current.expected_evidence_digest,
     }),
     (client) =>
       client.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "freeze_application",
-        args: [
-          applicationId,
-          textField(data, "regionCriterionId"),
-          textField(data, "orgTypeCriterionId"),
-          textField(data, "deadlineCriterionId"),
-          deadline,
-          before,
-          after,
-        ],
+        args: [applicationId],
       })
   );
 }
@@ -590,6 +598,20 @@ function renderResult(result) {
   const detailsBox = document.createElement("div");
   detailsBox.className = "result-details-box";
 
+  for (const [label, value] of [
+    ["Grant specification", result.grant_specification_id],
+    ["Authorized publisher", result.publisher],
+    ["Bound source", result.grant_url],
+    ["Expected evidence digest", result.expected_evidence_digest],
+  ]) {
+    if (!value) continue;
+    const item = document.createElement("div");
+    item.className = "result-detail-item";
+    const shown = label.includes("digest") ? shortenDigest(value) : value;
+    item.innerHTML = `<span class="result-detail-label">${label}</span><span class="result-detail-value">${escapeHtml(shown)}</span>`;
+    detailsBox.append(item);
+  }
+
   if (result.evidence_digest) {
     const digestItem = document.createElement("div");
     digestItem.className = "result-detail-item";
@@ -748,11 +770,6 @@ function epochField(data, name) {
     return undefined;
   }
   return epoch;
-}
-
-function utcField(data, name) {
-  const epoch = epochField(data, name);
-  return epoch === undefined ? "" : new Date(epoch * 1000).toISOString().replace(".000Z", "Z");
 }
 
 function escapeHtml(str) {

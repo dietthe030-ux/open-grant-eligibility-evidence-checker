@@ -82,11 +82,24 @@ export async function readResult(client, applicationId) {
   return parseContractJson(raw);
 }
 
+export async function readGrantSpecification(client, grantSpecificationId) {
+  const raw = await client.readContract({
+    address: requireConfigured(),
+    functionName: "get_grant_specification",
+    args: [grantSpecificationId],
+  });
+  return parseContractJson(raw);
+}
+
+export async function getGrantSpecificationSnapshot(grantSpecificationId) {
+  return readGrantSpecification(createReadClient(), grantSpecificationId);
+}
+
 export function expectedState(state, applicationId, postconditions = {}) {
   return { applicationId, state, ...postconditions };
 }
 
-const POSITIVE_EVIDENCE_DIGEST = "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961";
+const POSITIVE_EVIDENCE_DIGEST = "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da";
 const POSITIVE_FIXTURE_URL = "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json";
 const UNRESOLVED_FIXTURE_URL = "https://httpbin.org/json";
 
@@ -118,7 +131,7 @@ export function assessmentExpectedState(retry, applicationId, current) {
       retryCount: 0,
     });
   }
-  if (current?.grant_url && current.grant_url !== POSITIVE_FIXTURE_URL) {
+  if (current?.grant_specification_id !== "open-grant-2027-v1" || current?.grant_url !== POSITIVE_FIXTURE_URL || current?.expected_evidence_digest !== POSITIVE_EVIDENCE_DIGEST) {
     return expectedState("ASSESSED", applicationId, {
       outcomes: ["ELIGIBLE", "NOT_ELIGIBLE", "UNRESOLVED"],
       requireAssessmentFields: true,
@@ -171,6 +184,18 @@ export function assertApplicationReadback(result, expected) {
   }
   if (expected.retryCount !== undefined && Number(result.retry_count) !== expected.retryCount) {
     throw new Error(`Readback mismatch: expected retry count ${expected.retryCount}.`);
+  }
+  if (expected.grantSpecificationId !== undefined && result.grant_specification_id !== expected.grantSpecificationId) {
+    throw new Error("Readback mismatch: grant specification differs.");
+  }
+  for (const [expectedKey, resultKey, label] of [
+    ["publisher", "publisher", "publisher"],
+    ["grantUrl", "grant_url", "bound source"],
+    ["expectedEvidenceDigest", "expected_evidence_digest", "expected evidence digest"],
+  ]) {
+    if (expected[expectedKey] !== undefined && String(result[resultKey]).toLowerCase() !== String(expected[expectedKey]).toLowerCase()) {
+      throw new Error(`Readback mismatch: ${label} differs.`);
+    }
   }
   return result;
 }

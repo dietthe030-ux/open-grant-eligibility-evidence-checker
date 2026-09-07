@@ -50,9 +50,14 @@ test("assessment readback requires outcome, criteria arrays and evidence fields"
 });
 
 test("assessment expectations distinguish positive assess from unresolved retry", () => {
-  const positive = assessmentExpectedState(false, "positive");
+  const positive = assessmentExpectedState(false, "positive", {
+    grant_specification_id: "open-grant-2027-v1",
+    grant_url: "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
+    expected_evidence_digest: "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da",
+  });
   assert.equal(positive.outcome, "ELIGIBLE");
   assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
+  assert.equal(positive.evidenceDigest, "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da");
   assert.equal(positive.retryCount, 0);
 
   const unresolved = assessmentExpectedState(false, "unresolved", { grant_url: "https://httpbin.org/json" });
@@ -82,6 +87,15 @@ test("UTC form timestamps preserve exact seconds for transaction arguments", () 
 test("pending journals are isolated per application while retaining the legacy key", () => {
   assert.notEqual(pendingStorageKey("e2e-positive-20260902-05"), pendingStorageKey("e2e-unresolved-20260902-04"));
   assert.match(pendingStorageKey("e2e-positive-20260902-05"), /pending-write\.v1\.e2e-positive-20260902-05/);
+});
+
+test("create readback binds the publisher-issued specification ID", () => {
+  const expected = { state: "DRAFT", grantSpecificationId: "open-grant-2027-v1", publisher: ACCOUNT, grantUrl: "https://publisher.example/spec.json", expectedEvidenceDigest: "a".repeat(64) };
+  const exact = { state: "DRAFT", grant_specification_id: "open-grant-2027-v1", publisher: ACCOUNT, grant_url: expected.grantUrl, expected_evidence_digest: expected.expectedEvidenceDigest };
+  assert.doesNotThrow(() => assertApplicationReadback(exact, expected));
+  for (const mutation of [{ grant_specification_id: "other" }, { publisher: CONTRACT }, { grant_url: "https://attacker.example/spec.json" }, { expected_evidence_digest: "b".repeat(64) }]) {
+    assert.throws(() => assertApplicationReadback({ ...exact, ...mutation }, expected), /differs/i);
+  }
 });
 
 test("legacy pending journal migrates and resumes through its application-scoped coordinator", async () => {

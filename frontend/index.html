@@ -69,7 +69,7 @@
               <span class="eyebrow-text">ATTESTATION WORKSPACE</span>
             </div>
             <h1 id="page-title">Make the grant criteria inspectable.</h1>
-            <p class="hero-copy">Freeze a public grant specification and declared applicant facts on GenLayer. Independent consensus validators evaluate canonical criteria inside an immutable observation window.</p>
+            <p class="hero-copy">Reference a grant specification registered by an authorized publisher, then freeze declared applicant facts on GenLayer. Independent validators verify the publisher-bound source and exact evidence digest before deriving a result.</p>
 
             <div class="disclaimer-banner" role="note">
               <div class="disclaimer-icon" aria-hidden="true">
@@ -95,14 +95,14 @@
                 <span class="protocol-num" aria-hidden="true">01</span>
                 <div class="protocol-info">
                   <strong>Declare Draft</strong>
-                  <p>Register applicant facts and link public grant criteria URL.</p>
+                  <p>Reference an immutable specification issued by an authorized publisher.</p>
                 </div>
               </li>
               <li class="protocol-step">
                 <span class="protocol-num" aria-hidden="true">02</span>
                 <div class="protocol-info">
                   <strong>Freeze Window</strong>
-                  <p>Bind criterion IDs, publish deadline, and fix observation bounds.</p>
+                  <p>Seal the publisher-bound source, digest, criteria, deadline, and observation window.</p>
                 </div>
               </li>
               <li class="protocol-step">
@@ -114,6 +114,21 @@
               </li>
             </ol>
           </aside>
+        </div>
+      </section>
+
+      <section class="activity" aria-labelledby="authority-title">
+        <div class="activity-heading">
+          <span class="eyebrow-pill">HOW TRUST IS ESTABLISHED</span>
+          <h2 id="authority-title">The applicant does not choose the evidence authority.</h2>
+          <p class="activity-desc">A contract-authorized publisher first registers an immutable grant specification. That on-chain record binds the publisher address, canonical HTTPS source, canonical JSON SHA-256, criterion IDs, deadline, and observation window to one specification ID.</p>
+        </div>
+        <div class="activity-log-wrapper">
+          <ol class="protocol-steps">
+            <li class="protocol-step"><span class="protocol-num" aria-hidden="true">01</span><div class="protocol-info"><strong>Obtain the published specification ID</strong><p>Use the identifier supplied by the grant publisher. The app verifies it exists on-chain before requesting a draft signature.</p></div></li>
+            <li class="protocol-step"><span class="protocol-num" aria-hidden="true">02</span><div class="protocol-info"><strong>Declare only applicant facts</strong><p>The applicant supplies region, organization type, and submission time. Source and grant rules are not editable applicant inputs.</p></div></li>
+            <li class="protocol-step"><span class="protocol-num" aria-hidden="true">03</span><div class="protocol-info"><strong>Verify provenance with the result</strong><p>The authoritative readback shows the specification, publisher, bound source, expected digest, observed digest, and consensus-derived outcome.</p></div></li>
+          </ol>
         </div>
       </section>
 
@@ -152,9 +167,9 @@
               <span class="field-hint">Unique identifier for this application record</span>
             </div>
             <div class="field-group">
-              <label for="create-grant-url">Grant source URL <span class="required-star" aria-hidden="true">*</span></label>
-              <input id="create-grant-url" name="grantUrl" type="url" required placeholder="https://example.org/grant.json" autocomplete="off" spellcheck="false" />
-              <span class="field-hint">Public JSON/web source defining grant criteria</span>
+              <label for="create-spec-id">Publisher-issued specification ID <span class="required-star" aria-hidden="true">*</span></label>
+              <input id="create-spec-id" name="grantSpecificationId" required maxlength="96" placeholder="e.g. open-grant-2027-v1" autocomplete="off" spellcheck="false" />
+              <span class="field-hint">The contract resolves this ID to an immutable source, publisher, criteria set, and evidence digest. Applicants cannot replace them.</span>
             </div>
             <div class="field-row">
               <div class="field-group">
@@ -186,41 +201,16 @@
             <div class="panel-step-indicator">
               <span class="step-badge">PHASE 02 · FREEZE</span>
             </div>
-            <h2>Bind the evidence window</h2>
-            <p class="panel-desc">Map criterion IDs against source data, define the deadline, and seal the observation bounds.</p>
+            <h2>Seal the publisher-bound record</h2>
+            <p class="panel-desc">Confirm the application ID. The contract freezes the authorized specification snapshot; no applicant-editable source or rule fields are accepted.</p>
           </div>
           <form id="freeze-form" class="form-grid" novalidate>
             <div class="field-group">
               <label for="freeze-app-id">Application ID <span class="required-star" aria-hidden="true">*</span></label>
               <input id="freeze-app-id" name="applicationId" required placeholder="same as draft ID" autocomplete="off" spellcheck="false" />
             </div>
-            <div class="field-row-3">
-              <div class="field-group">
-                <label for="freeze-region-id">Region ID <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-region-id" name="regionCriterionId" required placeholder="region" />
-              </div>
-              <div class="field-group">
-                <label for="freeze-org-id">Org type ID <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-org-id" name="orgTypeCriterionId" required placeholder="org_type" />
-              </div>
-              <div class="field-group">
-                <label for="freeze-deadline-id">Deadline ID <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-deadline-id" name="deadlineCriterionId" required placeholder="deadline" />
-              </div>
-            </div>
-            <div class="field-group">
-              <label for="freeze-deadline-utc">Published deadline (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-              <input id="freeze-deadline-utc" name="deadlineUtc" type="datetime-local" step="1" required />
-            </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label for="freeze-obs-start">Observation starts (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-obs-start" name="observationNotBefore" type="datetime-local" step="1" required />
-              </div>
-              <div class="field-group">
-                <label for="freeze-obs-end">Observation ends (UTC) <span class="required-star" aria-hidden="true">*</span></label>
-                <input id="freeze-obs-end" name="observationNotAfter" type="datetime-local" step="1" required />
-              </div>
+            <div class="disclaimer-banner" role="note">
+              <div class="disclaimer-body"><p class="notice"><strong>Authority boundary:</strong> The referenced source URL, expected digest, criterion IDs, deadline, and observation window were registered on-chain by an authorized publisher and cannot be edited in this step.</p></div>
             </div>
             <div class="form-actions">
               <button class="button button-outline button-block" type="submit">
