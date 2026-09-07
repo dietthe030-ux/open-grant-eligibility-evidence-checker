@@ -99,7 +99,8 @@ export function expectedState(state, applicationId, postconditions = {}) {
   return { applicationId, state, ...postconditions };
 }
 
-const POSITIVE_EVIDENCE_DIGEST = "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da";
+const POSITIVE_SPECIFICATION_ID = "open-grant-2027-authorized-v2";
+const POSITIVE_EVIDENCE_DIGEST = "c75774cac755e6ad20ce9e7edbfc4d4c89c997da74b2c434d1fafe17d4085b99";
 const POSITIVE_FIXTURE_URL = "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json";
 const UNRESOLVED_FIXTURE_URL = "https://httpbin.org/json";
 
@@ -131,7 +132,7 @@ export function assessmentExpectedState(retry, applicationId, current) {
       retryCount: 0,
     });
   }
-  if (current?.grant_specification_id !== "open-grant-2027-v1" || current?.grant_url !== POSITIVE_FIXTURE_URL || current?.expected_evidence_digest !== POSITIVE_EVIDENCE_DIGEST) {
+  if (current?.grant_specification_id !== POSITIVE_SPECIFICATION_ID || current?.grant_url !== POSITIVE_FIXTURE_URL || current?.expected_evidence_digest !== POSITIVE_EVIDENCE_DIGEST) {
     return expectedState("ASSESSED", applicationId, {
       outcomes: ["ELIGIBLE", "NOT_ELIGIBLE", "UNRESOLVED"],
       requireAssessmentFields: true,
