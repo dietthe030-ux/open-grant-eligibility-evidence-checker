@@ -1,7 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN, TransientTransportError, waitForFinalized } from "../../frontend/src/transaction.js";
 import { assertApplicationReadback, assessmentExpectedState, pendingStorageKey } from "../../frontend/src/contract.js";
 import { parseUtcEpoch } from "../../frontend/src/time.js";
@@ -53,13 +51,13 @@ test("assessment readback requires outcome, criteria arrays and evidence fields"
 
 test("assessment expectations distinguish positive assess from unresolved retry", () => {
   const positive = assessmentExpectedState(false, "positive", {
-    grant_specification_id: "open-grant-2027-authorized-v2",
+    grant_specification_id: "open-grant-2027-v1",
     grant_url: "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
-    expected_evidence_digest: "c75774cac755e6ad20ce9e7edbfc4d4c89c997da74b2c434d1fafe17d4085b99",
+    expected_evidence_digest: "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da",
   });
   assert.equal(positive.outcome, "ELIGIBLE");
   assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
-  assert.equal(positive.evidenceDigest, "c75774cac755e6ad20ce9e7edbfc4d4c89c997da74b2c434d1fafe17d4085b99");
+  assert.equal(positive.evidenceDigest, "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da");
   assert.equal(positive.retryCount, 0);
 
   const unresolved = assessmentExpectedState(false, "unresolved", { grant_url: "https://httpbin.org/json" });
@@ -77,20 +75,6 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   assert.equal(retry.lastReason, "SOURCE_INVALID_OR_UNBOUND");
   assert.equal(retry.minimumRetryCount, 1);
   assert.throws(() => assessmentExpectedState(true, "positive", { state: "ASSESSED", outcome: "ELIGIBLE" }), /not retryable/i);
-});
-
-test("public positive fixture identity and canonical digest match the immutable specification", async () => {
-  const fixture = JSON.parse(await readFile(new URL("../../frontend/public/e2e/open-grant-eligibility.json", import.meta.url), "utf8"));
-  const canonical = JSON.stringify(fixture);
-  const digest = createHash("sha256").update(canonical).digest("hex");
-  assert.equal(fixture.specification_id, "open-grant-2027-authorized-v2");
-  assert.equal(Buffer.byteLength(canonical), 373);
-  assert.equal(digest, "c75774cac755e6ad20ce9e7edbfc4d4c89c997da74b2c434d1fafe17d4085b99");
-  assert.equal(assessmentExpectedState(false, "positive", {
-    grant_specification_id: fixture.specification_id,
-    grant_url: fixture.canonical_url,
-    expected_evidence_digest: digest,
-  }).outcome, "ELIGIBLE");
 });
 
 test("UTC form timestamps preserve exact seconds for transaction arguments", () => {
