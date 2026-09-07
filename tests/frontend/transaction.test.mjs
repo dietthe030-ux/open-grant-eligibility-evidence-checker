@@ -55,11 +55,11 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   const positive = assessmentExpectedState(false, "positive", {
     grant_specification_id: "open-grant-2027-v1",
     grant_url: "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
-    expected_evidence_digest: "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da",
+    expected_evidence_digest: "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961",
   });
   assert.equal(positive.outcome, "ELIGIBLE");
   assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
-  assert.equal(positive.evidenceDigest, "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da");
+  assert.equal(positive.evidenceDigest, "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961");
   assert.equal(positive.retryCount, 0);
 
   const unresolved = assessmentExpectedState(false, "unresolved", { grant_url: "https://httpbin.org/json" });
@@ -79,7 +79,7 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   assert.throws(() => assessmentExpectedState(true, "positive", { state: "ASSESSED", outcome: "ELIGIBLE" }), /not retryable/i);
 });
 
-test("public positive fixture identity and canonical digest match frontend expectations", async () => {
+test("public positive fixture canonical digest matches frontend expectations without self-asserted authority", async () => {
   const fixture = JSON.parse(await readFile(new URL("../../frontend/public/e2e/open-grant-eligibility.json", import.meta.url), "utf8"));
   const sortKeys = (value) => Array.isArray(value)
     ? value.map(sortKeys)
@@ -88,11 +88,11 @@ test("public positive fixture identity and canonical digest match frontend expec
       : value;
   const canonical = JSON.stringify(sortKeys(fixture));
   const digest = createHash("sha256").update(canonical).digest("hex");
-  assert.equal(fixture.specification_id, "open-grant-2027-v1");
-  assert.equal(Buffer.byteLength(canonical), 362);
-  assert.equal(digest, "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da");
+  assert.equal(Object.hasOwn(fixture, "specification_id"), false);
+  assert.equal(Buffer.byteLength(canonical), 322);
+  assert.equal(digest, "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961");
   assert.equal(assessmentExpectedState(false, "positive", {
-    grant_specification_id: fixture.specification_id,
+    grant_specification_id: "open-grant-2027-v1",
     grant_url: fixture.canonical_url,
     expected_evidence_digest: digest,
   }).outcome, "ELIGIBLE");

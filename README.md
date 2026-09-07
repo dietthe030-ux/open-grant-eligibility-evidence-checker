@@ -25,7 +25,6 @@ The source bound by the authorized publisher must be a bounded JSON object with 
 ```json
 {
   "canonical_url": "https://example.org/grant.json",
-  "specification_id": "open-grant-2027-v1",
   "observed_at": 1798761500,
   "criterion_ids": {
     "region": "region-1",
@@ -38,7 +37,7 @@ The source bound by the authorized publisher must be a bounded JSON object with 
 }
 ```
 
-Validators independently refetch and rederive the consequential result. The fetched canonical JSON digest must equal the digest precommitted by the authorized publisher, and leader/validator equivalence includes that digest. Unauthorized registration, source/specification identity mismatch, digest mismatch, unavailable, malformed, stale, or otherwise unbound evidence cannot produce a conclusive eligibility result.
+Validators independently refetch and rederive the consequential result. The fetched exact URL and canonical JSON digest must equal the values precommitted by the authorized publisher, and leader/validator equivalence includes that digest. The source cannot authorize itself by declaring an on-chain specification ID. Unauthorized registration, source identity mismatch, digest mismatch, unavailable, malformed, stale, or otherwise unbound evidence cannot produce a conclusive eligibility result.
 
 ## Local verification
 

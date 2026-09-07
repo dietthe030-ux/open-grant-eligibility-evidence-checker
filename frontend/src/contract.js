@@ -99,7 +99,7 @@ export function expectedState(state, applicationId, postconditions = {}) {
   return { applicationId, state, ...postconditions };
 }
 
-const POSITIVE_EVIDENCE_DIGEST = "9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da";
+const POSITIVE_EVIDENCE_DIGEST = "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961";
 const POSITIVE_FIXTURE_URL = "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json";
 const UNRESOLVED_FIXTURE_URL = "https://httpbin.org/json";
 

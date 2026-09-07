@@ -10,7 +10,7 @@ DEADLINE_EPOCH = calendar.timegm((2027, 1, 1, 0, 0, 0))
 OBSERVED_AT = DEADLINE_EPOCH - 100
 
 def payload_dict(**overrides):
-    value = {"allowed_org_types":["NONPROFIT","PUBLIC_BENEFIT"],"allowed_regions":["EU","US"],"canonical_url":GRANT_URL,"criterion_ids":{"deadline":"deadline-2027","org_type":"org-type-1","region":"region-1"},"deadline_utc":DEADLINE,"observed_at":OBSERVED_AT,"specification_id":SPEC_ID}
+    value = {"allowed_org_types":["NONPROFIT","PUBLIC_BENEFIT"],"allowed_regions":["EU","US"],"canonical_url":GRANT_URL,"criterion_ids":{"deadline":"deadline-2027","org_type":"org-type-1","region":"region-1"},"deadline_utc":DEADLINE,"observed_at":OBSERVED_AT}
     value.update(overrides)
     return value
 
@@ -107,11 +107,15 @@ def test_evidence_digest_mismatch_fails_closed(direct_vm, direct_deploy):
     assert result["outcome"] == "UNRESOLVED" and result["last_reason"] == "EVIDENCE_DIGEST_MISMATCH"
     assert result["failed_criteria"] == [] and result["evidence_digest"] == digest()
 
-@pytest.mark.parametrize("change,reason", [({"canonical_url":"https://other.example.org/grant.json"},"SOURCE_IDENTITY_MISMATCH"),({"specification_id":"applicant-authored-spec"},"SPECIFICATION_IDENTITY_MISMATCH")])
-def test_source_identity_mismatches_fail_closed(change, reason, direct_vm, direct_deploy):
-    contract = deployed_with_spec(direct_deploy); create(contract, reason); mock_source(direct_vm, payload_dict(**change)); contract.assess_application(reason)
-    result = read(contract,reason)
-    assert result["outcome"] == "UNRESOLVED" and result["last_reason"] == reason
+def test_source_url_identity_mismatch_fails_closed(direct_vm, direct_deploy):
+    contract = deployed_with_spec(direct_deploy); create(contract, "source-mismatch"); mock_source(direct_vm, payload_dict(canonical_url="https://other.example.org/grant.json")); contract.assess_application("source-mismatch")
+    result = read(contract,"source-mismatch")
+    assert result["outcome"] == "UNRESOLVED" and result["last_reason"] == "SOURCE_IDENTITY_MISMATCH"
+
+def test_source_does_not_self_authorize_with_a_specification_id(direct_vm, direct_deploy):
+    value = payload_dict(specification_id="applicant-authored-spec")
+    contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py"); register(contract, digest(value)); create(contract, "extra-field"); mock_source(direct_vm, value); contract.assess_application("extra-field")
+    assert read(contract,"extra-field")["outcome"] == "ELIGIBLE"
 
 def test_missing_criteria_is_not_negative_eligibility(direct_vm, direct_deploy):
     value = payload_dict(); value["criterion_ids"].pop("deadline")

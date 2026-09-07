@@ -126,7 +126,7 @@ def _string_list(value, label: str) -> list:
     return sorted(values)
 
 
-def _source_payload(response, expected_url: str, expected_specification_id: str) -> dict:
+def _source_payload(response, expected_url: str) -> dict:
     if int(response.status) != 200:
         raise ValueError("source is not available")
     body = _body(response)
@@ -135,8 +135,6 @@ def _source_payload(response, expected_url: str, expected_specification_id: str)
         raise ValueError("source must be an object")
     if payload.get("canonical_url") != expected_url:
         raise ValueError("SOURCE_IDENTITY_MISMATCH")
-    if payload.get("specification_id") != expected_specification_id:
-        raise ValueError("SPECIFICATION_IDENTITY_MISMATCH")
     observed_at = payload.get("observed_at")
     if isinstance(observed_at, bool) or not isinstance(observed_at, int):
         raise ValueError("invalid source observation time")
@@ -187,7 +185,6 @@ def _is_transient_web_error(error: Exception) -> bool:
 
 
 def _evaluate(
-    grant_specification_id: str,
     grant_url: str,
     expected_evidence_digest: str,
     region: str,
@@ -212,12 +209,12 @@ def _evaluate(
             return _result("UNRESOLVED", [], [], "", 0, "SOURCE_UNAVAILABLE")
         return _result("UNRESOLVED", [], [], "", 0, "SOURCE_NOT_FOUND")
     try:
-        source = _source_payload(response, grant_url, grant_specification_id)
+        source = _source_payload(response, grant_url)
     except KeyError:
         return _result("CRITERIA_MISSING", [], [], "", 0, "CRITERIA_MISSING")
     except ValueError as error:
         reason = str(error)
-        if reason in ("SOURCE_IDENTITY_MISMATCH", "SPECIFICATION_IDENTITY_MISMATCH"):
+        if reason == "SOURCE_IDENTITY_MISMATCH":
             return _result("UNRESOLVED", [], [], "", 0, reason)
         return _result("UNRESOLVED", [], [], "", 0, "SOURCE_INVALID_OR_UNBOUND")
     except Exception:
@@ -384,7 +381,6 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
 
         def leader_fn():
             return _evaluate(
-                grant_specification_id,
                 grant_url,
                 expected_evidence_digest,
                 region,
@@ -403,7 +399,6 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
                 return False
             try:
                 validator_result = _evaluate(
-                    grant_specification_id,
                     grant_url,
                     expected_evidence_digest,
                     region,
