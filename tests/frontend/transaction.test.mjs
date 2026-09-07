@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { assertSuccessfulTransaction, classifyTransaction, createWriteCoordinator, FINISHED_WITH_RETURN, TransientTransportError, waitForFinalized } from "../../frontend/src/transaction.js";
-import { assertApplicationReadback, assessmentExpectedState, pendingStorageKey } from "../../frontend/src/contract.js";
+import { assertApplicationReadback, assessmentExpectedState, pendingStorageKey, POSITIVE_SPECIFICATION_ID } from "../../frontend/src/contract.js";
 import { parseUtcEpoch } from "../../frontend/src/time.js";
 import transportFaultHandler from "../../frontend/api/e2e-transport-fault.js";
 
@@ -53,7 +53,7 @@ test("assessment readback requires outcome, criteria arrays and evidence fields"
 
 test("assessment expectations distinguish positive assess from unresolved retry", () => {
   const positive = assessmentExpectedState(false, "positive", {
-    grant_specification_id: "open-grant-2027-v1",
+    grant_specification_id: POSITIVE_SPECIFICATION_ID,
     grant_url: "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
     expected_evidence_digest: "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961",
   });
@@ -61,6 +61,14 @@ test("assessment expectations distinguish positive assess from unresolved retry"
   assert.deepEqual(positive.matchedCriteria, ["REGION", "ORG_TYPE", "DEADLINE"]);
   assert.equal(positive.evidenceDigest, "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961");
   assert.equal(positive.retryCount, 0);
+
+  const superseded = assessmentExpectedState(false, "superseded", {
+    grant_specification_id: "open-grant-2027-v1",
+    grant_url: "https://open-grant-eligibility-evidence-che.vercel.app/e2e/open-grant-eligibility.json",
+    expected_evidence_digest: "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961",
+  });
+  assert.equal(superseded.outcome, undefined);
+  assert.deepEqual(superseded.outcomes, ["ELIGIBLE", "NOT_ELIGIBLE", "UNRESOLVED"]);
 
   const unresolved = assessmentExpectedState(false, "unresolved", { grant_url: "https://httpbin.org/json" });
   assert.equal(unresolved.outcome, "UNRESOLVED");
@@ -92,7 +100,7 @@ test("public positive fixture canonical digest matches frontend expectations wit
   assert.equal(Buffer.byteLength(canonical), 322);
   assert.equal(digest, "3116222a82a1b97ab7f9a9d440faa50fc27de2196c0938bf760fce346a918961");
   assert.equal(assessmentExpectedState(false, "positive", {
-    grant_specification_id: "open-grant-2027-v1",
+    grant_specification_id: POSITIVE_SPECIFICATION_ID,
     grant_url: fixture.canonical_url,
     expected_evidence_digest: digest,
   }).outcome, "ELIGIBLE");
@@ -111,8 +119,8 @@ test("pending journals are isolated per application while retaining the legacy k
 });
 
 test("create readback binds the publisher-issued specification ID", () => {
-  const expected = { state: "DRAFT", grantSpecificationId: "open-grant-2027-v1", publisher: ACCOUNT, grantUrl: "https://publisher.example/spec.json", expectedEvidenceDigest: "a".repeat(64) };
-  const exact = { state: "DRAFT", grant_specification_id: "open-grant-2027-v1", publisher: ACCOUNT, grant_url: expected.grantUrl, expected_evidence_digest: expected.expectedEvidenceDigest };
+  const expected = { state: "DRAFT", grantSpecificationId: POSITIVE_SPECIFICATION_ID, publisher: ACCOUNT, grantUrl: "https://publisher.example/spec.json", expectedEvidenceDigest: "a".repeat(64) };
+  const exact = { state: "DRAFT", grant_specification_id: POSITIVE_SPECIFICATION_ID, publisher: ACCOUNT, grant_url: expected.grantUrl, expected_evidence_digest: expected.expectedEvidenceDigest };
   assert.doesNotThrow(() => assertApplicationReadback(exact, expected));
   for (const mutation of [{ grant_specification_id: "other" }, { publisher: CONTRACT }, { grant_url: "https://publisher.example/Spec.json" }, { expected_evidence_digest: "b".repeat(64) }]) {
     assert.throws(() => assertApplicationReadback({ ...exact, ...mutation }, expected), /differs/i);
