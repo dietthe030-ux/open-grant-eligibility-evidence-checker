@@ -93,7 +93,7 @@ test("create readback binds the publisher-issued specification ID", () => {
   const expected = { state: "DRAFT", grantSpecificationId: "open-grant-2027-v1", publisher: ACCOUNT, grantUrl: "https://publisher.example/spec.json", expectedEvidenceDigest: "a".repeat(64) };
   const exact = { state: "DRAFT", grant_specification_id: "open-grant-2027-v1", publisher: ACCOUNT, grant_url: expected.grantUrl, expected_evidence_digest: expected.expectedEvidenceDigest };
   assert.doesNotThrow(() => assertApplicationReadback(exact, expected));
-  for (const mutation of [{ grant_specification_id: "other" }, { publisher: CONTRACT }, { grant_url: "https://attacker.example/spec.json" }, { expected_evidence_digest: "b".repeat(64) }]) {
+  for (const mutation of [{ grant_specification_id: "other" }, { publisher: CONTRACT }, { grant_url: "https://publisher.example/Spec.json" }, { expected_evidence_digest: "b".repeat(64) }]) {
     assert.throws(() => assertApplicationReadback({ ...exact, ...mutation }, expected), /differs/i);
   }
 });

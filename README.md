@@ -12,6 +12,8 @@ The contract produces an evidence signal, not a legal or funding guarantee. Appl
 
 `contracts/open_grant_eligibility_evidence_checker.py` stores an owner-managed publisher allowlist, immutable grant specifications, and applications.
 
+The repaired contract is explicitly `UPGRADABLE`: deployment records the same Studio account as owner, initial authorized publisher, stored upgrader, and sole GenLayer Root upgrader. The public `upgrade(new_code)` path rejects any other sender. Recovery scope and limits are documented in `docs/DEPLOYMENT-RECOVERY.md`.
+
 Workflow:
 
 1. The contract owner authorizes a publisher with `set_publisher_authorization` (the deployer is authorized initially).
@@ -68,6 +70,7 @@ The prior Studionet deployment and Vercel release implement the superseded appli
 ## Official technical references
 
 - https://docs.genlayer.com/developers/intelligent-contracts/features/web-access
+- https://docs.genlayer.com/developers/intelligent-contracts/features/upgradability
 - https://docs.genlayer.com/developers/intelligent-contracts/equivalence-principle
 - https://docs.genlayer.com/api-references/genlayer-linter
 - https://docs.genlayer.com/api-references/genlayer-test

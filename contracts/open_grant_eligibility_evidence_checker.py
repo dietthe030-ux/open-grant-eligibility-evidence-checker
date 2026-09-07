@@ -257,6 +257,7 @@ def _same_consequence(leader_json: str, validator_json: str) -> bool:
 
 class OpenGrantEligibilityEvidenceChecker(gl.Contract):
     owner: Address
+    upgrader: Address
     authorized_publishers: TreeMap[Address, bool]
     grant_specifications: TreeMap[str, GrantSpecification]
     applications: TreeMap[str, Application]
@@ -265,9 +266,20 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
 
     def __init__(self):
         self.owner = gl.message.sender_address
+        self.upgrader = gl.message.sender_address
         self.authorized_publishers[self.owner] = True
         self.grant_specification_count = 0
         self.application_count = 0
+        # VERIFY-AT-STUDIO: confirm the deployment sender remains the sole Root upgrader.
+        gl.storage.Root.get().upgraders.get().append(gl.message.sender_address)
+
+    @gl.public.write
+    def upgrade(self, new_code: bytes) -> None:
+        if gl.message.sender_address != self.upgrader:
+            _fail("only the recorded upgrader can replace code")
+        code = gl.storage.Root.get().code.get()
+        code.truncate()
+        code.extend(new_code)
 
     @gl.public.write
     def set_publisher_authorization(self, publisher: str, authorized: bool) -> None:
@@ -511,6 +523,10 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
     @gl.public.view
     def get_owner(self) -> str:
         return str(self.owner)
+
+    @gl.public.view
+    def get_upgrader(self) -> str:
+        return str(self.upgrader)
 
     @gl.public.view
     def is_authorized_publisher(self, publisher: str) -> bool:

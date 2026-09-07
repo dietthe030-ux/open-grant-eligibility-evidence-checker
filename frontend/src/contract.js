@@ -188,12 +188,12 @@ export function assertApplicationReadback(result, expected) {
   if (expected.grantSpecificationId !== undefined && result.grant_specification_id !== expected.grantSpecificationId) {
     throw new Error("Readback mismatch: grant specification differs.");
   }
-  for (const [expectedKey, resultKey, label] of [
-    ["publisher", "publisher", "publisher"],
-    ["grantUrl", "grant_url", "bound source"],
-    ["expectedEvidenceDigest", "expected_evidence_digest", "expected evidence digest"],
+  for (const [expectedKey, resultKey, label, normalize] of [
+    ["publisher", "publisher", "publisher", (value) => String(value).toLowerCase()],
+    ["grantUrl", "grant_url", "bound source", String],
+    ["expectedEvidenceDigest", "expected_evidence_digest", "expected evidence digest", (value) => String(value).toLowerCase()],
   ]) {
-    if (expected[expectedKey] !== undefined && String(result[resultKey]).toLowerCase() !== String(expected[expectedKey]).toLowerCase()) {
+    if (expected[expectedKey] !== undefined && normalize(result[resultKey]) !== normalize(expected[expectedKey])) {
       throw new Error(`Readback mismatch: ${label} differs.`);
     }
   }

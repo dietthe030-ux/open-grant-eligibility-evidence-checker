@@ -34,6 +34,24 @@ def deployed_with_spec(direct_deploy):
     register(contract)
     return contract
 
+def test_deployer_is_the_only_recorded_upgrader_and_upgrade_is_authorized(direct_vm, direct_deploy, direct_alice):
+    contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
+    deployer = direct_vm.sender
+    assert contract.get_upgrader().lower() == ("0x" + deployer.hex()).lower()
+
+    root = __import__("genlayer", fromlist=["gl"]).gl.storage.Root.get()
+    assert [str(value).lower() for value in root.upgraders.get()] == [contract.get_upgrader().lower()]
+
+    original = bytes(root.code.get())
+    direct_vm.sender = direct_alice
+    with pytest.raises(Exception, match="only the recorded upgrader"):
+        contract.upgrade(b"unauthorized-code")
+    assert bytes(root.code.get()) == original
+
+    direct_vm.sender = deployer
+    contract.upgrade(b"compatible-v2")
+    assert bytes(root.code.get()) == b"compatible-v2"
+
 def test_authority_registry_and_immutable_specification(direct_vm, direct_deploy, direct_alice, direct_bob):
     contract = direct_deploy("contracts/open_grant_eligibility_evidence_checker.py")
     owner = direct_vm.sender
