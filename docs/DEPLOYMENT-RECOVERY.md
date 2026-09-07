@@ -9,8 +9,8 @@
 - Constructor arguments: none (`[]`).
 - Intended deployer, owner, initially authorized publisher and sole upgrader: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`.
 - Linked contracts/configuration: none.
-- Exact source-bearing revision: `7844daf4eeae6bfad90ce2588b3d7fc72b4c71e3`.
-- Contract source SHA-256: `D89F09D2791E5AD2FB415F89680BD56CFC30308B0105181C1E3AAD787A9D84A2`.
+- Exact source-bearing revision: `71e5006864ab144777585306efed335d10096591`.
+- Contract source SHA-256: `16BD852AFA7F0A4C95B9D7B3C352302204F8F70ED637B27C58DEE38A8768D8A3`.
 - Final PRE_DEPLOY package/HEAD: recorded after this tracked manifest correction; the source-bearing revision above remains exact because the subsequent commit changes documentation only.
 
 The constructor stores the actual deployment sender as `owner` and `upgrader`, authorizes it as the first publisher, and appends it to `gl.storage.Root.get().upgraders`. `upgrade(new_code: bytes)` additionally rejects any sender other than the recorded upgrader before replacing Root code. Storage fields are append-only for this repair; future upgrades must preserve field order/types or provide a separately reviewed migration.
