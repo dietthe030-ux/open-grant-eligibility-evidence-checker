@@ -27,9 +27,9 @@ Locked mode: `OBSERVABLE_ACTION_LEDGER`. Polling is bounded to 60 attempts at 2.
 | Case | Account / role | Action or method | Exact purpose / arguments | Planned max observable actions | Transactions | Terminal proof |
 |---|---|---|---|---:|---:|---|
 | S00 | deployer/upgrader | account + network check | Studionet chain `61999`; account `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`; spendable balance | 3 | 0 | exact chain/account/balance recorded |
-| S01 | deployer/upgrader | schema/source probes | schema for exact candidate source; deployed `gen_getContractCode`; SHA-256 parity | 3 | 0 | public ABI and exact source hash match |
-| S02 | deployer/upgrader | deploy | exact reviewed source; constructor arguments `[]` | 63 | 1 | hash, `FINALIZED`, semantic success, consensus, contract address |
-| S03 | deployer/upgrader/owner | read identity | `get_owner()`, `get_upgrader()`, `is_authorized_publisher(deployer)` | 3 | 0 | all three bind to the locked account / `true` |
+| S01 | deployer/upgrader | pre-deploy schema/source probes | schema for exact candidate source and local SHA-256 parity | 2 | 0 | public ABI and exact source hash match reviewed package |
+| S02 | deployer/upgrader | deploy | exact reviewed source; constructor arguments `[]` | 64 | 1 | one submission + max 62 status observations + terminal contract-address result/readback; `FINALIZED`, semantic success and consensus |
+| S03 | deployer/upgrader/owner | deployed source + identity reads | `gen_getContractCode`, `get_owner()`, `get_upgrader()`, `is_authorized_publisher(deployer)` | 4 | 0 | source SHA exact and all identities bind to locked account / `true` |
 | S04 | deployer/authorized publisher | `register_grant_specification` | `open-grant-2027-authorized-v1`, canonical public fixture URL, digest `9f8b149c071a70b52fe5a818d8d0368b2fbd7629b56c9bd1f9f1830d116584da`, IDs `region-1`/`org-type-1`/`deadline-2027`, deadline `2027-01-01T00:00:00Z`, window `1798760000..1798762000` | 64 | 1 | immutable specification readback exact |
 | S05 | simulated unauthorized caller `0x1111111111111111111111111111111111111111` | Studio `gen_call` of `register_grant_specification` | fresh rejected ID with the same non-secret fields; read-only live-runtime authority probe | 3 | 0 | expected `publisher is not authorized`, unchanged count and unknown ID readback |
 | S06 | applicant account | `create_application` | fresh positive ID, authorized specification ID, `US`, `NONPROFIT`, `1798761500` | 64 | 1 | `DRAFT` snapshot binds publisher/source/digest |
