@@ -38,6 +38,6 @@ Access to the selected Studio Next account and continued chain state are prerequ
 
 ## Historical invalidation
 
-The former Studionet target (`61999`, RPC `https://studio.genlayer.com/api`, Explorer `https://explorer-studio.genlayer.com/`) and its account/address/receipt evidence are retained only as historical diagnostics. They are not the current network, account, deployment, recovery plan or approval basis for Studio Next. No 61999 deployment or write is resumed on 61997.
+The former Studionet target (`61999`) and its account/address/receipt evidence are retained only as historical diagnostics. They are not the current network, account, deployment, recovery plan or approval basis for Studio Next. No 61999 deployment or write is resumed on 61997.
 
 The current deployment facts above are the recovery anchor. Any source/configuration change invalidates dependent live evidence and requires a new exact-source deployment or approved upgrade.
