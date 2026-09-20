@@ -153,7 +153,7 @@ export class WalletSession {
       await this.switchToExpectedNetwork(detail.provider);
       chainId = normalizeChainId(await detail.provider.request({ method: "eth_chainId" }));
     }
-    if (chainId !== this.expectedChainId) throw new Error("Wallet did not switch to Studionet.");
+    if (chainId !== this.expectedChainId) throw new Error("Wallet did not switch to Studio Dev.");
     const balanceWei = parseBalance(await detail.provider.request({ method: "eth_getBalance", params: [account, "latest"] }));
     if (balanceWei < MIN_SPENDABLE_GEN_WEI) throw new Error("Wallet has no spendable GEN for this transaction.");
     this.clearListeners();
@@ -230,8 +230,8 @@ export class WalletSession {
       chainId,
       chainName: this.chain.name ?? "Genlayer Studio Network",
       nativeCurrency: this.chain.nativeCurrency ?? { name: "GEN Token", symbol: "GEN", decimals: 18 },
-      rpcUrls: this.chain.rpcUrls?.default?.http ?? ["https://studio.genlayer.com/api"],
-      blockExplorerUrls: ["https://explorer-studio.genlayer.com"],
+      rpcUrls: this.chain.rpcUrls?.default?.http ?? ["https://studio-dev.genlayer.com/api"],
+      blockExplorerUrls: ["https://explorer-studio-dev.genlayer.com"],
     };
   }
 }

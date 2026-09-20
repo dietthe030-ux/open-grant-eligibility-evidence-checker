@@ -1,12 +1,12 @@
 import { createClient } from "genlayer-js";
-import { studionet } from "genlayer-js/chains";
+import { studioDevnet } from "genlayer-js/chains";
 import { createWriteCoordinator, parseContractJson, TransientTransportError, waitForFinalized } from "./transaction.js";
 
 const env = import.meta.env ?? {};
 export const CONTRACT_ADDRESS = String(env.VITE_CONTRACT_ADDRESS ?? "").trim();
-export const CHAIN = studionet;
-export const CHAIN_ID = Number(studionet.id);
-export const EXPLORER_URL = "https://explorer-studio.genlayer.com";
+export const CHAIN = studioDevnet;
+export const CHAIN_ID = Number(studioDevnet.id);
+export const EXPLORER_URL = "https://explorer-studio-dev.genlayer.com";
 export const LEGACY_PENDING_STORAGE_KEY = "open-grant-eligibility.pending-write.v1";
 export const PENDING_STORAGE_PREFIX = `${LEGACY_PENDING_STORAGE_KEY}.`;
 const CONTROLLED_TRANSPORT_ENDPOINT = "/api/e2e-transport-fault";

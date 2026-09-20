@@ -21,11 +21,11 @@ test("provider registry accepts supported announcements and deduplicates provide
 test("wallet session is explicitly connected and invalidates on account removal", async () => {
   const listeners = new Map();
   const sessionProvider = {
-    request: async ({ method }) => method === "eth_chainId" ? "0xf22f" : method === "eth_getBalance" ? "0x1" : ["0x2222222222222222222222222222222222222222"],
+    request: async ({ method }) => method === "eth_chainId" ? "0xf22d" : method === "eth_getBalance" ? "0x1" : ["0x2222222222222222222222222222222222222222"],
     on: (event, handler) => listeners.set(event, handler),
     removeListener: (event) => listeners.delete(event),
   };
-  const session = new WalletSession(61999);
+  const session = new WalletSession(61997);
   await session.connect(detail("meta-session", sessionProvider));
   assert.equal(session.snapshot().correctNetwork, true);
   assert.equal(session.snapshot().connected, true);
@@ -37,11 +37,11 @@ test("wallet session is explicitly connected and invalidates on account removal"
 test("wallet session clears on provider disconnect", async () => {
   const listeners = new Map();
   const sessionProvider = {
-    request: async ({ method }) => method === "eth_chainId" ? "0xf22f" : method === "eth_getBalance" ? "0x1" : ["0x2222222222222222222222222222222222222222"],
+    request: async ({ method }) => method === "eth_chainId" ? "0xf22d" : method === "eth_getBalance" ? "0x1" : ["0x2222222222222222222222222222222222222222"],
     on: (event, handler) => listeners.set(event, handler),
     removeListener: (event) => listeners.delete(event),
   };
-  const session = new WalletSession(61999);
+  const session = new WalletSession(61997);
   await session.connect(detail("meta-disconnect", sessionProvider));
   listeners.get("disconnect")({ code: 4900 });
   assert.equal(session.snapshot().connected, false);
@@ -94,12 +94,12 @@ test("wallet session adds and switches an unknown chain, then verifies GEN balan
         if (chainId !== "0x1") return null;
         const error = new Error("unknown chain"); error.code = 4902; throw error;
       }
-      if (method === "wallet_addEthereumChain") { chainId = "0xf22f"; return null; }
+      if (method === "wallet_addEthereumChain") { chainId = "0xf22d"; return null; }
       if (method === "eth_getBalance") return "0x2";
       return null;
     },
   };
-  const session = new WalletSession(61999, () => {}, { name: "Genlayer Studio Network", nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 }, rpcUrls: { default: { http: ["https://studio.genlayer.com/api"] } } });
+  const session = new WalletSession(61997, () => {}, { name: "GenLayer Studio Devnet", nativeCurrency: { name: "GEN Token", symbol: "GEN", decimals: 18 }, rpcUrls: { default: { http: ["https://studio-dev.genlayer.com/api"] } } });
   await session.connect(detail("meta-add", sessionProvider));
   assert.equal(session.snapshot().sufficientBalance, true);
   assert.deepEqual(methods, ["eth_requestAccounts", "eth_chainId", "wallet_switchEthereumChain", "wallet_addEthereumChain", "wallet_switchEthereumChain", "eth_chainId", "eth_getBalance"]);
@@ -111,12 +111,12 @@ test("wallet session switches a known chain without adding it", async () => {
     request: async ({ method }) => {
       if (method === "eth_requestAccounts") return ["0x2222222222222222222222222222222222222222"];
       if (method === "eth_chainId") return chainId;
-      if (method === "wallet_switchEthereumChain") { chainId = "0xf22f"; return null; }
+      if (method === "wallet_switchEthereumChain") { chainId = "0xf22d"; return null; }
       if (method === "eth_getBalance") return "0x2";
       return null;
     },
   };
-  const session = new WalletSession(61999, () => {}, { name: "Genlayer Studio Network" });
+  const session = new WalletSession(61997, () => {}, { name: "GenLayer Studio Devnet" });
   await session.connect(detail("meta-switch", sessionProvider));
   assert.equal(session.snapshot().correctNetwork, true);
 });
@@ -130,7 +130,7 @@ test("wallet session surfaces a rejected network switch", async () => {
       return null;
     },
   };
-  const session = new WalletSession(61999, () => {}, { name: "Genlayer Studio Network" });
+  const session = new WalletSession(61997, () => {}, { name: "GenLayer Studio Devnet" });
   await assert.rejects(() => session.connect(detail("meta-reject", sessionProvider)), /switch was rejected/);
 });
 
@@ -140,14 +140,14 @@ test("wallet session clears stale balance while refreshing a changed account", a
   const sessionProvider = {
     request: async ({ method, params }) => {
       if (method === "eth_requestAccounts") return ["0x1111111111111111111111111111111111111111"];
-      if (method === "eth_chainId") return "0xf22f";
+      if (method === "eth_chainId") return "0xf22d";
       if (method === "eth_getBalance") return balance;
       throw new Error(`unexpected ${method} ${JSON.stringify(params ?? [])}`);
     },
     on: (event, handler) => listeners.set(event, handler),
     removeListener: (event) => listeners.delete(event),
   };
-  const session = new WalletSession(61999);
+  const session = new WalletSession(61997);
   await session.connect(detail("meta-refresh", sessionProvider));
   balance = "0x0";
   listeners.get("accountsChanged")(["0x2222222222222222222222222222222222222222"]);
@@ -158,8 +158,8 @@ test("wallet session clears stale balance while refreshing a changed account", a
 });
 
 test("chain IDs normalize decimal and hexadecimal forms", () => {
-  assert.equal(normalizeChainId("0xf22f"), 61999);
-  assert.equal(normalizeChainId("61999"), 61999);
+  assert.equal(normalizeChainId("0xf22d"), 61997);
+  assert.equal(normalizeChainId("61997"), 61997);
   assert.equal(normalizeChainId("nope"), undefined);
 });
 

@@ -39,7 +39,7 @@ def test_deployer_is_the_only_recorded_upgrader_and_upgrade_is_authorized(direct
     deployer = direct_vm.sender
     assert contract.get_upgrader().lower() == ("0x" + deployer.hex()).lower()
 
-    root = __import__("genlayer", fromlist=["gl"]).gl.storage.Root.get()
+    root = __import__("genlayer", fromlist=["storage"]).storage.Root.get()
     assert [str(value).lower() for value in root.upgraders.get()] == [contract.get_upgrader().lower()]
 
     original = bytes(root.code.get())

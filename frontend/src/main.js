@@ -173,9 +173,9 @@ elements.retry?.addEventListener("click", () => submitAssess(true));
 function renderConfiguration() {
   if (!isConfigured()) {
     appendLog("Configuration", "Contract address is not configured in environment. Write actions are disabled.", "warn");
-    elements.networkLabel.textContent = "Studionet · pending address";
+    elements.networkLabel.textContent = "Studio Dev · pending address";
   } else {
-    elements.networkLabel.textContent = "Studionet · ready";
+    elements.networkLabel.textContent = "Studio Dev · ready";
   }
 }
 
@@ -221,7 +221,7 @@ function renderConnection(state) {
   }
 
   if (connected && !state.correctNetwork) {
-    elements.networkLabel.textContent = "Wrong network · switch to Studionet";
+    elements.networkLabel.textContent = "Wrong network · switch to Studio Dev";
   }
 }
 
@@ -394,7 +394,7 @@ async function runWrite(operation, expected, submit) {
   }
   const state = session.snapshot();
   if (!state.connected) return showError("Connect a supported wallet before signing transactions.");
-  if (!state.correctNetwork) return showError("Switch wallet to Studionet before signing.");
+  if (!state.correctNetwork) return showError("Switch wallet to Studio Dev before signing.");
   if (!state.sufficientBalance) return showError("Wallet balance is insufficient to cover transaction gas fees.");
   if (!isConfigured()) return showError("Contract address is not configured. Transactions cannot be submitted.");
 

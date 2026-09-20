@@ -41,7 +41,7 @@ Validators independently refetch and rederive the consequential result. The fetc
 
 ## Local verification
 
-The current verified local environment is Python 3.13 with `genlayer-test==0.29.2`, `genlayer-py==0.16.3`, `genvm-linter==0.11.0`, and the cached GenVM `v0.3.0-rc7` runner bundle.
+The current Studio Next-compatible verification environment is Python 3.13.6 with `genlayer-test==0.30.0rc2`, `genlayer-py==0.19.0rc2`, `genvm-linter==0.11.1rc2`, GenLayer CLI `0.40.0-rc.3`, and `genlayer-js==2.0.0-rc.1`. The selected network is Studio Devnet (`studioDevnet`, chain `61997`, RPC `https://studio-dev.genlayer.com/api`).
 
 ```powershell
 $env:PYTHONIOENCODING = 'utf-8'
@@ -52,7 +52,7 @@ genvm-lint schema contracts/open_grant_eligibility_evidence_checker.py
 
 ## Frontend
 
-The native Vite frontend lives in `frontend/`. It uses `genlayer-js==1.1.8` and the current exported `studionet` chain configuration. No contract address is bundled into source: copy `frontend/.env.example` to `frontend/.env.local` and set `VITE_CONTRACT_ADDRESS` only after a contract has been deployed.
+The native Vite frontend lives in `frontend/`. It uses the coherent Studio Dev RC stack with `genlayer-js==2.0.0-rc.1` and the exported `studioDevnet` chain configuration (`https://studio-dev.genlayer.com/api`, chain `61997`). No contract address is bundled into source: copy `frontend/.env.example` to `frontend/.env.local` and set `VITE_CONTRACT_ADDRESS` only after a Studio Dev contract has been deployed.
 
 ```powershell
 Set-Location frontend
@@ -62,7 +62,7 @@ npm run build
 
 The wallet chooser supports MetaMask, OKX Wallet, and Rabby through EIP-6963. It never requests accounts when the chooser opens. Writes are single-flight, persist the transaction hash when browser storage is available, poll the GenLayer transaction object for `FINALIZED` plus `MAJORITY_AGREE`, require semantic `FINISHED_WITH_RETURN`, and then perform an application readback. If storage persistence degrades after submission, the hash is retained only for the current page and the UI instructs the user not to retry.
 
-The prior Studionet deployment and Vercel release implement the superseded applicant-selected-source model and are not valid evidence for this authority repair. The repaired contract requires a new PRE_DEPLOY review and a new deployment before the frontend can be released against it. The repository target remains [dietthe030-ux/open-grant-eligibility-evidence-checker](https://github.com/dietthe030-ux/open-grant-eligibility-evidence-checker).
+The prior Studionet deployment and Vercel release implement the superseded applicant-selected-source model and are not valid evidence for this authority repair. The repaired contract requires a new Studio Dev PRE_DEPLOY review and deployment before the frontend can be released against it. The repository target remains [dietthe030-ux/open-grant-eligibility-evidence-checker](https://github.com/dietthe030-ux/open-grant-eligibility-evidence-checker).
 
 ## Official technical references
 

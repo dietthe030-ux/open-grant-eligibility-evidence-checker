@@ -2,7 +2,40 @@
 
 Studio and frontend traffic are separate scopes. Counts below are planned maxima of observable primary-AI actions or SDK/provider calls, not fabricated physical-network totals.
 
-## Studio RPC measurement capability probe
+## Studio Next readiness (not an RPC budget gate)
+
+Current governance does not require a Studio RPC measurement matrix, physical-request count, or capability-probe evidence. Studio execution is controlled by the official CLI route and a single-operation invariant: validate the exact target, reserve one operation ID, broadcast once, store the returned hash, and independently verify receipt/finality, semantic execution and authoritative readback. Never blind-retry a write.
+
+```yaml
+NETWORK_ALIAS: studio-dev
+NETWORK_NAME: GenLayer Studio Devnet
+CHAIN_ID: 61997
+RPC: https://studio-dev.genlayer.com/api
+EXPLORER: https://explorer-studio-dev.genlayer.com/
+SDK_CHAIN: studioDevnet
+CLI_VERSION: 0.40.0-rc.3
+GENLAYER_JS_VERSION: 2.0.0-rc.1
+GENLAYER_PY_VERSION: 0.19.0rc2
+GENLAYER_TEST_VERSION: 0.30.0rc2
+GENVM_LINTER_VERSION: 0.11.1rc2
+SELECTED_ACTOR: actor7
+SELECTED_ADDRESS: 0x8581c4a532dd3f9b163b12809b1bd089f367147f
+WRITES_SUBMITTED: 0
+```
+
+The isolated CLI wrapper and venv were verified read-only against the canonical Studio Next target. The old Studionet capability probe and matrix below are historical and invalidated; they are not current 61997 evidence. The frontend matrix remains applicable below.
+
+## Minimum Studio Next execution plan
+
+1. Verify `studio-dev`, chain `61997`, selected actor7 and balance with the official CLI; record the exact candidate source hash and schema before any write.
+2. Deploy the exact reviewed source once with constructor arguments `[]` and one stable operation ID. Store the hash before polling.
+3. Verify the same hash independently for finality/status, leader semantic success, consensus and returned address, then read deployed source and owner/upgrader/publisher identity.
+4. Register the exact publisher specification once, then run fresh create/freeze/assess positive and digest-mismatch journeys with one hash per write and authoritative post-readback.
+5. Stop on any unknown error, identity mismatch, missing hash or lost operation state; do not resubmit or reuse historical 61999 addresses/hashes.
+
+The post-deployment ledger records exact arguments, hashes, receipt/finality, semantic result, consensus and readback. It does not claim a physical RPC count.
+
+## Historical invalidated Studionet capability probe
 
 ```yaml
 STUDIO_CAPABILITY_PROBE_STATUS: COMPLETE
@@ -20,7 +53,7 @@ No Studio page, deployment, signature, contract write, or E2E action for this ca
 
 First read-only ledger entry after the probe: at `2026-09-07T09:34:23.3628670Z`, direct Studionet RPC returned `eth_chainId=0xf22f` and `eth_getBalance(0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902, latest)=0x361a08405e8fd80000` (998 GEN). An unsupported read-only `eth_accounts` capability probe returned JSON-RPC `-32601 Method not found`; it created no transaction and is not treated as account-access proof.
 
-## STUDIO RPC BUDGET MATRIX
+## Historical invalidated Studionet RPC matrix
 
 Locked mode: `OBSERVABLE_ACTION_LEDGER`. Polling is bounded to 60 attempts at 2.5 seconds, with at most two recognized transient-transport retries, capped delay, terminal stop, and no write resubmission.
 
@@ -42,13 +75,13 @@ Each write allowance is: one submission action, at most 62 status observations (
 
 ## FRONTEND RPC BUDGET MATRIX
 
-Installed/runtime basis: `genlayer-js@1.1.8`; finality polling in this app uses `getTransaction`, max 60 successful poll attempts at 2.5 seconds plus at most two transient retries. A normal injected-wallet write uses `eth_getTransactionCount`, `eth_estimateGas`, optional `eth_gasPrice`, and `eth_sendTransaction`; the SDK's recognized ABI-compatibility fallback can repeat estimate/gas-price/send before any accepted hash. Transaction maximum remains one accepted write.
+Installed/runtime basis: `genlayer-js@2.0.0-rc.1` on `studioDevnet` (chain `61997`); finality polling in this app uses `getTransaction`, max 60 successful poll attempts at 2.5 seconds plus at most two transient retries. A normal injected-wallet write uses `eth_getTransactionCount`, `eth_estimateGas`, optional `eth_gasPrice`, and `eth_sendTransaction`; the SDK's recognized ABI-compatibility fallback can repeat estimate/gas-price/send before any accepted hash. Transaction maximum remains one accepted write.
 
 | Workflow | Calls and branch | Polling / retry | Planned maximum calls | Transactions | Terminal/readback |
 |---|---|---|---:|---:|---|
 | Fresh page / open chooser | provider announcements only; no account RPC | none | 0 | 0 | disconnected chooser-ready UI |
-| Connect, already on Studionet | `eth_requestAccounts`, `eth_chainId`, `eth_getBalance` | no blind retry | 3 | 0 | selected provider/account, correct chain, sufficient GEN |
-| Connect, unknown chain worst branch | request accounts; chain ID; failed switch; add chain; switch retry; post-switch chain ID; balance | bounded branch only on error `4902` | 7 | 0 | same selected provider reaches Studionet |
+| Connect, already on Studio Dev | `eth_requestAccounts`, `eth_chainId`, `eth_getBalance` | no blind retry | 3 | 0 | selected provider/account, correct chain, sufficient GEN |
+| Connect, unknown chain worst branch | request accounts; chain ID; failed switch; add chain; switch retry; post-switch chain ID; balance | bounded branch only on error `4902` | 7 | 0 | same selected provider reaches Studio Dev |
 | Create draft | `gen_call(get_grant_specification)` + write preparation/submission (normal 4; compatibility max 7) + up to 62 `getTransaction` attempts + `gen_call(get_application)` | 2.5s / 60; transient max 2, capped and abortable | 71 | 1 | `DRAFT` and exact specification/publisher/URL/digest snapshot |
 | Freeze application | pre-read `gen_call(get_application)` + write max 7 + status max 62 + post-read | same | 71 | 1 | `FROZEN`, bound terms unchanged |
 | Assess | pre-read + write max 7 + status max 62 + post-read | same | 71 | 1 | exact outcome, criteria, digest, reason and observed time |

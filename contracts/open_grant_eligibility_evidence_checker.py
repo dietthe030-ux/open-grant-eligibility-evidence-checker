@@ -1,4 +1,4 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 from dataclasses import dataclass
 import calendar
 import datetime
@@ -6,7 +6,9 @@ import hashlib
 import json
 import re
 
-from genlayer import *
+import genlayer as gl
+from genlayer.storage import TreeMap, allow as allow_storage
+from genlayer.types import Address, u8, u32, u64, u256
 
 
 STATES = ("DRAFT", "FROZEN", "ASSESSED")
@@ -252,7 +254,7 @@ def _same_consequence(leader_json: str, validator_json: str) -> bool:
     return all(leader.get(key) == validator.get(key) for key in ("outcome", "matched_criteria", "failed_criteria", "evidence_digest", "source_observed_at", "reason"))
 
 
-class OpenGrantEligibilityEvidenceChecker(gl.Contract):
+class OpenGrantEligibilityEvidenceChecker(gl.contract.Contract):
     owner: Address
     upgrader: Address
     authorized_publishers: TreeMap[Address, bool]
@@ -415,7 +417,7 @@ class OpenGrantEligibilityEvidenceChecker(gl.Contract):
             except Exception:
                 return False
 
-        result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
+        result = gl.vm.run_nondet(leader_fn, validator_fn)
         if not isinstance(result, str):
             _fail("invalid consensus result")
         data = json.loads(result)
