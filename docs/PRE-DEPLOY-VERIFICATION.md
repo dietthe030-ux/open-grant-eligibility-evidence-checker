@@ -57,9 +57,9 @@ The linter emitted informational `I200` that a newer runner exists; the project 
 
 ## Historical stop condition
 
-- This historical snapshot intentionally did not contain live evidence. The later private POST_DEPLOY_TEST package records the deployed contract, Studio transactions, GitHub repository, and Vercel release.
+- This historical snapshot intentionally did not contain live evidence. The later exact POST_DEPLOY_TEST package records the accepted Studio deployment, Studio S0–S11 evidence, the confirmed GitHub/Vercel targets and an unrun Vercel E2E plan. No GitHub push, Vercel deployment/release or Final Vercel E2E has occurred in that package.
 - Final Vercel E2E remains a separate gated action and requires the anonymous reviewer-approved plan plus explicit user permission immediately before opening/preparing the release.
 
 ## Supersession
 
-Do not use this historical file as current deployment provenance. The current evidence package is `private/POST-DEPLOY-VERIFICATION.md`.
+Do not use this historical file as current deployment provenance. The current evidence package is `private/resubmission/POST-DEPLOY-VERIFICATION-c423725.md`.
